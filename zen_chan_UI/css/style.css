@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+
+:root {
+    --terminal-bg: #0a0f0a;
+    --terminal-fg: #00ff41;
+    --terminal-border: #00802b;
+    --terminal-header-bg: #003311;
+    --terminal-shadow: #00ff41;
+    --panel-gap: 4px;
+    --body-outer-padding: 5px; /* Padding around the main grid */
+
+    --font-primary: 'VT323', monospace;
+    --font-secondary: 'Share Tech Mono', monospace;
+}
+
+html { box-sizing: border-box; }
+*, *:before, *:after { box-sizing: inherit; }
+
+body { /* Acts as a wrapper to center the fixed-aspect-ratio grid */
+    background-color: #000000; /* Pitch black for surrounding area */
+    margin: 0;
+    padding: var(--body-outer-padding);
+    height: calc(100vh - 2 * var(--body-outer-padding));
+    width: calc(100vw - 2 * var(--body-outer-padding));
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: var(--font-primary);
+    color: var(--terminal-fg);
+}
+
+/* Scanlines effect (optional, can be on body or grid-container) */
+body::after {
+    content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: repeating-linear-gradient(0deg, #00000000 0px, #00000000 1px, #00ff410a 2px, #00ff410a 3px);
+    pointer-events: none; z-index: 9999; opacity: 0.5;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); /* 6 columns */
+    grid-template-rows: repeat(3, 1fr);    /* 3 rows */
+    gap: var(--panel-gap);
+
+    /* --- Core of the square cells layout --- */
+    /* Fit this aspect-ratio box within the available space */
+    width: 100%;
+    height: 100%;
+    /* This ensures 1fr units become square based on the limiting dimension */
+}
+
+.terminal-panel {
+    background-color: var(--terminal-bg);
+    border: 1px solid var(--terminal-border);
+    box-shadow: 0 0 7px 0px #00ff4125, 0 0 3px 0px #00ff4115 inset;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    background-color: var(--terminal-header-bg);
+    padding: 2px 5px; /* Very compact header */
+    font-family: var(--font-secondary);
+    font-size: 0.8em; /* Adjusted for better visibility in small panels */
+    line-height: 1.2;
+    border-bottom: 1px solid var(--terminal-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    flex-shrink: 0;
+    white-space: nowrap; /* Prevent title wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ... if title too long */
+}
+.panel-header-title { max-width: 80%; overflow:hidden; text-overflow: ellipsis; }
+
+.panel-header-title::after {
+    content: '_'; animation: blink 1.1s step-end infinite; margin-left: 2px;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+.panel-buttons span {
+    display: inline-block; width: 8px; height: 8px; border: 1px solid var(--terminal-border);
+    margin-left: 2px; line-height: 6px; text-align: center; font-size: 0.7em; cursor: default;
+}
+.panel-buttons span:hover { background-color: var(--terminal-fg); color: var(--terminal-bg); }
+
+.panel-content {
+    flex-grow: 1;
+    overflow: hidden;
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.panel-content pre, .panel-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+.panel-content pre { /* For ASCII art */
+    font-family: var(--font-primary);
+    color: var(--terminal-fg);
+    text-shadow: 0 0 1px var(--terminal-shadow);
+    margin: 0;
+    overflow: hidden !important;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- NEW GRID PLACEMENT RULES --- */
+
+/* Main 3x3 square panel */
+.embedding-panel {
+    grid-column: 1 / span 3;
+    grid-row: 1 / span 3;
+}
+
+/* ASCII art gets a 2x1 rectangle at the top right */
+.logo-ascii-panel {
+    grid-column: 4 / span 2;
+    grid-row: 2 / span 1;
+}
+
+/* Radial viz gets a 2x1 rectangle below the ASCII art */
+.radial-panel {
+    grid-column: 4 / span 2;
+    grid-row: 1 / span 1;
+}
+
+/* The four 1x1 square panels filling the remaining slots */
+.bubble-panel {
+    grid-column: 6 / span 1;
+    grid-row: 1 / span 1;
+}
+
+.mood-panel {
+    grid-column: 6 / span 1;
+    grid-row: 2 / span 1;
+}
+
+.category-panel {
+    grid-column: 4 / span 1;
+    grid-row: 3 / span 1;
+}
+
+.map-panel {
+    grid-column: 5 / span 1;
+    grid-row: 3 / span 1;
+    /* This leaves the last cell (6, 3) empty. Let's make one panel larger */
+    grid-column: 5 / span 2; /* Make map panel a 2x1 rectangle to fill space */
+}
+
+
+/* --- Special Sizing for ASCII Art Text --- */
+.logo-ascii-panel .panel-content pre {
+    /* Adjusted font size to fit the new 2x1 rectangular shape without clipping */
+    font-size: clamp(4px, 1.2vw, 8px);
+    line-height: 0.8; /* Tighten lines to fit vertically */
+}
+/* ... (existing CSS code above) ... */
+
+/* Add this new section for the description footer */
+.panel-description-footer {
+    background-color: var(--terminal-header-bg); /* Use header background for consistency */
+    border-top: 1px solid var(--terminal-border); /* A top border to separate it */
+    padding: 8px 10px; /* Generous padding */
+    font-family: var(--font-secondary); /* A clear, mono font */
+    font-size: 1.1em; /* Slightly larger for readability */
+    color: var(--terminal-fg); /* Terminal green text */
+    text-align: center; /* Center the text */
+    flex-shrink: 0; /* Prevents it from shrinking if content is too large */
+    user-select: none; /* Prevent text selection if desired */
+    line-height: 1.4; /* Improve line spacing */
+}
+
+/* ... (rest of your existing CSS code below) ... */
+
+/* Special Sizing for ASCII Art Text - keeping this as it was */
+.logo-ascii-panel .panel-content .ascii-frame {
+    font-size: clamp(4px, 1.2vw, 10px);
+    line-height: 0.8;
+}
