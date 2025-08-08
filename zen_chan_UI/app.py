@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import sqlite3
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-DB = "..\data.db"
+DB = "..\\data.db"
 
 @app.route('/')
 def home():
@@ -171,5 +172,44 @@ def radar_data():
 
     return jsonify(response_data)
 
+@app.route('/api/mood_mapping_data')
+def get_mood_mapping_data():
+    with sqlite3.connect(DB) as conn: # Use 'with' statement for proper connection handling
+        conn.row_factory = sqlite3.Row  # Enable row factory for dict-like access
+        cursor = conn.cursor()
+        rules = cursor.execute('SELECT pre_label, time_of_day, mood FROM mood_rules').fetchall()
+    
+    # Collect all unique labels for each category
+    all_pre_labels = sorted(list(set(r['pre_label'] for r in rules)))
+    all_times_of_day = sorted(list(set(r['time_of_day'] for r in rules)))
+    all_moods = sorted(list(set(r['mood'] for r in rules)))
+
+    # Prepare links data with counts, using string labels (JS will map to IDs)
+    raw_links = defaultdict(int) # Counts for (source_label, target_label) tuples
+
+    for rule in rules:
+        # Link from pre_label to time_of_day
+        raw_links[(rule['pre_label'], rule['time_of_day'])] += 1
+        # Link from time_of_day to mood
+        raw_links[(rule['time_of_day'], rule['mood'])] += 1
+
+    # Convert raw_links to a list of dicts for JSON serialization
+    processed_links = []
+    for (source_label, target_label), value in raw_links.items():
+        processed_links.append({
+            "source": source_label,
+            "target": target_label,
+            "value": value
+        })
+
+    # Return only the raw data needed by JS
+    return jsonify({
+        "pre_labels": all_pre_labels,
+        "time_of_day_labels": all_times_of_day,
+        "mood_labels": all_moods,
+        "links": processed_links
+    })
+    
+    
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='127.0.0.1', port=5000)

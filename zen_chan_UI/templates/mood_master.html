@@ -1,0 +1,118 @@
+<!-- templates/mood_mapping.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Rules Mapping</title>
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="static/css/style.css">
+    <style>    
+        html, body {
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            background-color: black; /* Pure black background */
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+            height: 100%;
+        }
+        .terminal-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border: 1px solid #33ff33; /* Add border for terminal effect */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+
+        /* Terminal Panel Header Styles */
+        .panel-header {
+            background-color: #0a0a0a; /* Slightly lighter black for header */
+            padding: 8px 15px;
+            border-bottom: 1px solid #33ff33;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .panel-header-title {
+            color: #33ff33;
+        }
+        .panel-buttons span {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #33ff33;
+        }
+
+        /* Content area for the Plotly graph */
+        .panel-content {
+            flex-grow: 1; /* Takes all remaining vertical space */
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            padding: 10px; /* Padding around the graph */
+            box-sizing: border-box;
+        }
+
+        #moodMappingGraph {
+            width: 100%;
+            height: 100%;
+            /* Plotly will render into this div */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-container">
+        <div class="terminal-panel">
+            <div class="panel-header">
+                <span class="panel-header-title">Mood Rules Mapping</span>
+                <div class="panel-buttons"><span>_</span><span>□</span></div>
+            </div>
+            <div class="panel-content">
+                <div id="moodMappingGraph">
+                    <!-- Plotly graph will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchAndRenderMoodMapping() {
+            try {
+                const response = await fetch('/api/mood_mapping_data');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const graphConfig = await response.json();
+
+                const graphDiv = document.getElementById('moodMappingGraph');
+
+                if (!graphConfig.data || graphConfig.data.length === 0 || !graphConfig.data[0].node.label || graphConfig.data[0].node.label.length === 0) {
+                    graphDiv.innerHTML = '<p style="color: #888; text-align: center; margin-top: 20%;">No data available to create the mapping.</p>';
+                    return;
+                }
+
+                // Plotly.newPlot(graphDivElement, data, layout, config)
+                Plotly.newPlot(graphDiv, graphConfig.data, graphConfig.layout, {responsive: true});
+
+            } catch (error) {
+                console.error("Error fetching or rendering mood mapping:", error);
+                const graphDiv = document.getElementById('moodMappingGraph');
+                graphDiv.innerHTML = '<p style="color: red; text-align: center; margin-top: 20%;">Failed to load mapping data. Please check the console for details.</p>';
+            }
+        }
+
+        // Initial graph load
+        document.addEventListener('DOMContentLoaded', fetchAndRenderMoodMapping);
+    </script>
+
+</body>
+</html>
