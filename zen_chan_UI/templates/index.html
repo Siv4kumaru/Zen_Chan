@@ -3,18 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYSTEM GRID v5.0</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Zen_Chan V.1.0.0.0</title>
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
+<style>
+ 
+/* Transparent clickable overlay */
+.click-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+</style>
 <body>
     <div class="grid-container">
 
 
         <!-- embedding.html panel -->
-        <a class="terminal-panel embedding-panel" href="embedding.html" target="_blank">
+        <div class="terminal-panel embedding-panel" onclick="window.open('embedding.html', '_blank')">
             <div class="panel-header"><span class="panel-header-title">[EMBEDDING_CORE]</span><div class="panel-buttons"><span>_</span><span>□</span></div></div>
             <div class="panel-content"><iframe src="embedding.html" title="Embedding Core" scrolling="no"></iframe></div>
-        </a>
+            <!-- Transparent overlay to make the panel clickable -->
+            <div class="click-overlay" onclick="window.open('embedding.html', '_blank')"></div>
+        </div>
 
         
         <!-- radial.html panel -->
@@ -85,7 +99,7 @@ _______________\:::\____/:::/__\:::\   \:::\____/:: /    |::|   /::\____\       
         </div>
     </div>
 </body>
-<script >
+<!-- <script >
            document.addEventListener('DOMContentLoaded', () => {
             const mainPanel = document.getElementById('ascii-main-panel');
             const preElement = mainPanel.querySelector('.panel-content pre');
@@ -111,6 +125,6 @@ _______________\:::\____/:::/__\:::\   \:::\____/:: /    |::|   /::\____\       
                 preElement.textContent = originalAscii;
             });
         });
-    </script>
+    </script> -->
 
 </html>

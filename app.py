@@ -1,4 +1,3 @@
-
 import os
 import shutil
 import sqlite3
@@ -207,7 +206,3 @@ if __name__ == "__main__":
     final_df['mood'] = final_df.apply(heuristic_mood_label, axis=1)
     final_df.to_sql("visits", conn, if_exists="replace", index=False)
     conn.close()
-    
-    
-    
-    
