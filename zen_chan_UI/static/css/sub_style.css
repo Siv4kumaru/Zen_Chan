@@ -1,0 +1,36 @@
+        html, body {
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            /* Pure black background */
+            background-color: black;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+            height: 100%;
+        }
+        .terminal-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .panel-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column; /* This ensures children can stack vertically and take remaining space */
+        }
+        select {
+            background: black;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            margin: 5px;
+            padding: 5px;
+        }
+        #graph {
+            flex-grow: 1; /* Make the graph div take up all available vertical space */
+        }

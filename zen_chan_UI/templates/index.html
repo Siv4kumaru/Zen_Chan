@@ -23,18 +23,19 @@
 
 
         <!-- embedding.html panel -->
-        <div class="terminal-panel embedding-panel" onclick="window.open('embedding.html', '_blank')">
-            <div class="panel-header"><span class="panel-header-title">[EMBEDDING_CORE]</span><div class="panel-buttons"><span>_</span><span>□</span></div></div>
-            <div class="panel-content"><iframe src="embedding.html" title="Embedding Core" scrolling="no"></iframe></div>
-            <!-- Transparent overlay to make the panel clickable -->
-            <div class="click-overlay" onclick="window.open('embedding.html', '_blank')"></div>
+    <div class="terminal-panel embedding-panel" onclick="window.open('/embedding', '_blank')" style="margin:0;padding:0;width:100%;height:100%;position:relative;">
+        <div class="panel-content" style="margin:0;padding:0;width:100%;height:100%;">
+            <iframe src="/embedding" title="Embedding Core" scrolling="no"
+                    style="margin:0;padding:0;width:100%;height:100%;border:none;display:block;"></iframe>
         </div>
+    </div>
+
+
 
         
         <!-- radial.html panel -->
         <div class="terminal-panel radial-panel">
-            <div class="panel-header"><span class="panel-header-title">[RADIAL_VIZ]</span><div class="panel-buttons"><span>_</span><span>□</span></div></div>
-            <div class="panel-content"><iframe src="radial.html" title="Radial Viz" scrolling="no"></iframe></div>
+            <div class="panel-content"style="margin:0;padding:0;width:100%;height:100%;"><iframe src="/radar" title="Radial Viz" scrolling="no" style="margin:0;padding:0;width:100%;height:100%;border:none;display:block;"></iframe></div>
         </div>
                 <!-- ASCII Art Panel (was ascii-main-panel, now smaller) -->
         <div class="terminal-panel logo-ascii-panel" >

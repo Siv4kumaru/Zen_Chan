@@ -3,55 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zen_Chan V.1.0.0.0</title>
+    <title>Zen_Chan Embeddings</title>
     <!-- Assuming static/css/style.css exists, otherwise remove this line -->
-    <!-- <link rel="stylesheet" href="static/css/style.css"> --> 
+    <!-- <link rel="stylesheet" href="static/css/style.css"> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.0.1/plotly.min.js" integrity="sha512-GvBV4yZL+5zT68skQaXRW80H+S82WupIppDunAVt6pCLVdFmTv9tstetOqXv76L/z9WFl+0zY28QFKu0LAVFSg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <style>
-        html, body {
-            margin: 0;
-            height: 100%;
-            background-color: #0d0d0d;
-            color: #33ff33;
-            font-family: 'Courier New', monospace;
-        }
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            grid-template-rows: 1fr;
-            height: 100%;
-        }
-        .terminal-panel {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        .panel-header {
-            background: black;
-            color: #33ff33;
-            padding: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #33ff33;
-        }
-        .panel-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        select {
-            background: black;
-            color: #33ff33;
-            border: 1px solid #33ff33;
-            margin: 5px;
-            padding: 5px;
-        }
-        #graph {
-            flex-grow: 1;
-        }
-    </style>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/sub_style.css">
+
 </head>
 
 <body>
@@ -96,35 +55,35 @@ function loadGraph() {
         // 1. Group data points by pre_labels and accumulate duration
         data.forEach(d => {
             // Use 'Unknown Category' as a fallback if pre_labels is null or undefined
-            const categoryKey = d.pre_labels || 'Unknown Category'; 
-            
+            const categoryKey = d.pre_labels || 'Unknown Category';
+
             if (!groupedByMood[categoryKey]) {
                 groupedByMood[categoryKey] = {
                     points: [],
-                    color: d.color, 
-                    totalDuration: 0 
+                    color: d.color,
+                    totalDuration: 0
                 };
             }
             groupedByMood[categoryKey].points.push(d);
-            groupedByMood[categoryKey].totalDuration += (d.duration || 0); 
+            groupedByMood[categoryKey].totalDuration += (d.duration || 0);
         });
 
-        // NEW: Convert the groupedByMood object into an array for sorting
+        // Convert the groupedByMood object into an array for sorting
         const categoriesArray = Object.keys(groupedByMood).map(categoryName => ({
             name: categoryName,
             data: groupedByMood[categoryName]
         }));
 
-        // NEW: Sort the categories by totalDuration in descending order
+        // Sort the categories by totalDuration in descending order
         categoriesArray.sort((a, b) => b.data.totalDuration - a.data.totalDuration);
 
         // 2. Create a separate trace for each category (pre_labels) in sorted order
         categoriesArray.forEach(categoryItem => {
             const category = categoryItem.name;
             const categoryData = categoryItem.data.points;
-            const categoryColor = categoryItem.data.color; 
+            const categoryColor = categoryItem.data.color;
             const cumulativeDurationSeconds = categoryItem.data.totalDuration;
-            const cumulativeDurationHours = (cumulativeDurationSeconds / 3600).toFixed(2); 
+            const cumulativeDurationHours = (cumulativeDurationSeconds / 3600).toFixed(2);
 
             const x = categoryData.map(d => d.x);
             const y = categoryData.map(d => d.y);
@@ -138,10 +97,10 @@ function loadGraph() {
                     y: y,
                     mode: 'markers',
                     type: 'scatter',
-                    name: `${category} (${cumulativeDurationHours}h)`, 
+                    name: `${category} (${cumulativeDurationHours}h)`,
                     text: hoverLabels,
                     hoverinfo: 'text',
-                    marker: { color: categoryColor, size: 6 } 
+                    marker: { color: categoryColor, size: 10 } // Slightly increased size for 2D
                 };
             } else { // 3d
                 trace = {
@@ -150,10 +109,10 @@ function loadGraph() {
                     z: z,
                     mode: 'markers',
                     type: 'scatter3d',
-                    name: `${category} (${cumulativeDurationHours}h)`, 
+                    name: `${category} (${cumulativeDurationHours}h)`,
                     text: hoverLabels,
                     hoverinfo: 'text',
-                    marker: { color: categoryColor, size: 4 } 
+                    marker: { color: categoryColor, size: 8 } // Slightly increased size for 3D
                 };
             }
             traces.push(trace);
@@ -161,25 +120,27 @@ function loadGraph() {
 
         // 3. Define the layout with legend styling
         const layout = {
-            paper_bgcolor: '#0d0d0d',
-            plot_bgcolor: '#0d0d0d',
+            autosize: true, // Make Plotly resize to fill its container
+            margin: { l: 0, r: 0, b: 0, t: 0 }, // Remove all margins to maximize plot area
+            paper_bgcolor: 'black',
+            plot_bgcolor: 'black',
             font: {
-                color: '#33ff33', 
+                color: '#33ff33',
                 family: 'Courier New, monospace'
             },
-            legend: { 
-                x: 1, 
-                y: 1, 
-                xanchor: 'right', 
-                yanchor: 'top',   
+            legend: {
+                x: 0,           // Centered horizontally
+                y: 0,             // Bottom of the plot area
+                xanchor: 'right', // Anchor point for x position
+                yanchor: 'bottom', // Anchor point for y position
                 bgcolor: 'black',
                 bordercolor: '#33ff33',
                 borderwidth: 1,
                 font: {
-                    color: '#33ff33' 
+                    color: '#33ff33'
                 }
             },
-            showlegend: true 
+            showlegend: true
         };
 
         // Add 3D scene config if 3D
@@ -187,11 +148,22 @@ function loadGraph() {
             layout.scene = {
                 xaxis: { showbackground: false, gridcolor: '#1a1a1a', zerolinecolor: '#33ff33', showticklabels: false, title: '' },
                 yaxis: { showbackground: false, gridcolor: '#1a1a1a', zerolinecolor: '#33ff33', showticklabels: false, title: '' },
-                zaxis: { showbackground: false, gridcolor: '#1a1a1a', zerolinecolor: '#33ff33', showticklabels: false, title: '' }
+                zaxis: { showbackground: false, gridcolor: '#1a1a1a', zerolinecolor: '#33ff33', showticklabels: false, title: '' },
+                camera: { zoom: 1.2 } // Initial zoom for 3D graphs (1.0 is default, higher zooms in)
             };
         }
 
         Plotly.newPlot('graph', traces, layout);
+
+        // Add a resize listener to ensure Plotly redraws if window resizes
+        // This helps the graph adapt to the div's current size after browser resize.
+        window.addEventListener('resize', function() {
+            Plotly.relayout('graph', {
+                'autosize': true,
+                'height': $('#graph').height(), // Get current height of the div
+                'width': $('#graph').width()   // Get current width of the div
+            });
+        });
     });
 }
 

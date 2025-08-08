@@ -6,7 +6,7 @@
     --terminal-border: #00802b;
     --terminal-header-bg: #003311;
     --terminal-shadow: #00ff41;
-    --panel-gap: 4px;
+    /* --panel-gap: 4px; */
     --body-outer-padding: 5px; /* Padding around the main grid */
 
     --font-primary: 'VT323', monospace;
