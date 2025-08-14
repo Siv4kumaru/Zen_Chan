@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Over Time</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/sub_style.css">
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            background-color: black;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+            height: 100%;
+        }
+        .terminal-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .panel-content {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #moodOverTimeChart {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-container">
+        <div class="terminal-panel">
+            <div class="panel-header">
+                <span class="panel-header-title">Mood Distribution Over Time</span>
+            </div>
+            <div class="panel-content">
+                <canvas id="moodOverTimeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function fetchAndRenderChart() {
+            try {
+                const response = await fetch('/api/mood_over_time');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const chartData = await response.json();
+
+                const ctx = document.getElementById('moodOverTimeChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: chartData.datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day'
+                                },
+                                ticks: {
+                                    color: '#33ff33'
+                                },
+                                grid: {
+                                    color: '#444'
+                                }
+                            },
+                            y: {
+                                stacked: true,
+                                ticks: {
+                                    color: '#33ff33'
+                                },
+                                grid: {
+                                    color: '#444'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#33ff33'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error fetching or rendering chart:", error);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', fetchAndRenderChart);
+    </script>
+</body>
+</html>

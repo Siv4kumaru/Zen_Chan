@@ -8,6 +8,7 @@
     <!-- ECharts CDN -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/sub_style.css">
     <style>    
         html, body {
             margin: 0;
@@ -27,43 +28,26 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            border: 1px solid #33ff33; /* Add border for terminal effect */
             box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
 
-        /* Terminal Panel Header Styles */
-        .panel-header {
-            background-color: #0a0a0a; /* Slightly lighter black for header */
-            padding: 8px 15px;
-            border-bottom: 1px solid #33ff33;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9em;
-            text-transform: uppercase;
-        }
-        .panel-header-title {
-            color: #33ff33;
-        }
-        .panel-buttons span {
-            margin-left: 10px;
-            cursor: pointer;
-            color: #33ff33;
-        }
+
 
         /* Content area for the ECharts graph */
         .panel-content {
             flex-grow: 1; /* Takes all remaining vertical space */
             display: flex;
             justify-content: center; /* Center horizontally */
-            align-items: center; /* Center vertically */
-            padding: 10px; /* Padding around the graph */
+            align-items: left; /* Center vertically */
+            padding: 5px; /* Padding around the graph */
             box-sizing: border-box;
+            
         }
 
         #moodMappingGraph {
             width: 100%;
-            height: 100%;
+
+            height: 200%;
             /* ECharts will render into this div, it needs explicit dimensions */
         }
     </style>
@@ -121,10 +105,6 @@
 
                 // --- Data Processing for ECharts ---
 
-                // ECharts Sankey nodes and links use string names directly
-                // We'll create a list of all unique node names (labels) and their initial colors
-                // And a list of links with source/target names and values
-
                 const allNodeNames = new Set();
                 rawData.pre_labels.forEach(name => allNodeNames.add(name));
                 rawData.time_of_day_labels.forEach(name => allNodeNames.add(name));
@@ -135,7 +115,6 @@
                     return;
                 }
                 
-                // Prepare ECharts nodes data with their initial colors
                 originalEchartsNodes = Array.from(allNodeNames).map(name => {
                     let color;
                     if (rawData.pre_labels.includes(name)) {
@@ -150,14 +129,13 @@
                     return {
                         name: name,
                         itemStyle: {
-                            color: color // Node fill color
+                            color: color
                         }
                     };
                 });
 
-                // Prepare ECharts links data with source/target names, values, and initial colors
                 originalEchartsLinks = rawData.links.map(link => {
-                    let sourceColor = "rgba(128, 128, 128, 1.0)"; // Default grey for links
+                    let sourceColor = "rgba(128, 128, 128, 1.0)";
                     if (rawData.pre_labels.includes(link.source)) {
                         sourceColor = COLOR_PALETTES['pre_label'];
                     } else if (rawData.time_of_day_labels.includes(link.source)) {
@@ -170,19 +148,19 @@
                         target: link.target,
                         value: link.value,
                         lineStyle: {
-                            color: sourceColor.replace("1.0)", `${LINK_ALPHA})`), // Link color with transparency
-                            curveness: 0.5 // Default curveness for Sankey links
+                            color: sourceColor.replace("1.0)", `${LINK_ALPHA})`),
+                            curveness: 0.5
                         }
                     };
                 });
                 
                 // --- ECharts Option Configuration ---
                 const option = {
-                    backgroundColor: 'black', // Overall chart background
+                    backgroundColor: 'black',
                     title: {
-                        text: "Mood Rules Mapping:<br>Pre-Label → Time of Day → Mood",
                         left: 'center',
                         top: 20,
+                        display:false,
                         textStyle: {
                             color: '#33ff33',
                             fontFamily: 'Courier New, monospace',
@@ -191,13 +169,11 @@
                     },
                     tooltip: {
                         trigger: 'item',
-                        triggerOn: 'mousemove', // Show tooltip on mouse move
+                        triggerOn: 'mousemove',
                         formatter: function(params) {
                             if (params.dataType === 'node') {
-                                // For nodes, show its name
                                 return `Node: <b>${params.name}</b>`;
                             } else if (params.dataType === 'link') {
-                                // For links, show source -> target and value
                                 return `Flow: <b>${params.data.source} → ${params.data.target}</b><br/>Value: <b>${params.data.value}</b>`;
                             }
                             return '';
@@ -212,25 +188,33 @@
                     },
                     series: [{
                         type: 'sankey',
-                        layout: 'none', // Use default layout, or 'none' for automatic
-                        data: originalEchartsNodes, // Initial nodes data
-                        links: originalEchartsLinks, // Initial links data
-                        nodeWidth: 20, // Node thickness
-                        nodeGap: 15,  // Node padding
+                        layout: 'none',
+                        data: originalEchartsNodes,
+                        links: originalEchartsLinks,
+                        nodeWidth: 20,
+                        nodeGap: 15,
+                        // --- START ECHARTS LABEL CHANGE ---
                         label: {
-                            color: '#33ff33', // Node label color
+                            show: false, // Labels are hidden by default
+                            color: '#33ff33',
                             fontFamily: 'Courier New, monospace',
                             fontSize: 12,
-                            position: 'right' // Label position
+                            position: 'right'
                         },
+                        emphasis: { // Styles when hovered or highlighted
+                            label: {
+                                show: true // Labels become visible on hover/emphasis
+                            }
+                        },
+                        // --- END ECHARTS LABEL CHANGE ---
                         itemStyle: {
-                            borderColor: '#33ff33', // Node border color
+                            borderColor: '#33ff33',
                             borderWidth: 0.5
                         },
                         lineStyle: {
-                            opacity: LINK_ALPHA, // Default link opacity
+                            opacity: LINK_ALPHA,
                             curveness: 0.5,
-                            color: 'source' // Links inherit source node's color by default, if not explicitly set
+                            color: 'source'
                         }
                     }]
                 };
@@ -252,14 +236,12 @@
                         const clickedNodeName = params.name;
                         applyNodeFilter(clickedNodeName, rawData.pre_labels, rawData.time_of_day_labels, rawData.mood_labels);
                     } else {
-                        // Clicking on a link or empty space resets the view
                         resetGraphView();
                     }
                 });
 
                 // Clicking on the chart background (not a node/link) to reset
                 myChart.getZr().on('click', function (params) {
-                    // Check if the click target is the chart background itself (not a graphical element)
                     if (params.target === undefined || params.target.dataIndex === undefined) {
                         resetGraphView();
                     }
@@ -282,56 +264,49 @@
             return FADE_COLOR_BASE; // Fallback
         }
 
-
         // Function to apply the node filter: Show only immediate parents and children
         function applyNodeFilter(clickedNodeName, preLabels, timeOfDayLabels, moodLabels) {
-            // Deep copy current node and link data to modify
             const currentNodesData = JSON.parse(JSON.stringify(originalEchartsNodes));
             const currentLinksData = JSON.parse(JSON.stringify(originalEchartsLinks));
 
             const nodesToHighlight = new Set();
             const linksToHighlight = new Set();
 
-            // 1. Always highlight the clicked node itself
             nodesToHighlight.add(clickedNodeName);
 
-            // 2. Find and highlight immediate children and their connecting links
             currentLinksData.forEach((link, idx) => {
                 if (link.source === clickedNodeName) {
-                    nodesToHighlight.add(link.target); // Add child node's name
-                    linksToHighlight.add(idx); // Add connecting link's index
+                    nodesToHighlight.add(link.target);
+                    linksToHighlight.add(idx);
                 }
             });
 
-            // 3. Find and highlight immediate parents and their connecting links
             currentLinksData.forEach((link, idx) => {
                 if (link.target === clickedNodeName) {
-                    nodesToHighlight.add(link.source); // Add parent node's name
-                    linksToHighlight.add(idx); // Add connecting link's index
+                    nodesToHighlight.add(link.source);
+                    linksToHighlight.add(idx);
                 }
             });
 
-            // Apply colors to nodes: fade if not in nodesToHighlight
             currentNodesData.forEach(node => {
                 if (!nodesToHighlight.has(node.name)) {
-                    // Fade color
                     const originalRGB = getRGBFromRGBA(node.itemStyle.color);
                     node.itemStyle.color = `rgba(${originalRGB}, ${FADE_ALPHA_NODE})`;
+                    // Also hide labels for faded nodes
+                    node.label = { show: false }; 
+                } else {
+                    // Ensure labels are shown for highlighted nodes
+                    node.label = { show: true, color: '#33ff33', fontFamily: 'Courier New, monospace', fontSize: 12, position: 'right' };
                 }
-                // If it IS in nodesToHighlight, its original color remains
             });
 
-            // Apply colors to links: fade if not in linksToHighlight
             currentLinksData.forEach((link, idx) => {
                 if (!linksToHighlight.has(idx)) {
-                    // Fade color
                     const originalRGB = getRGBFromRGBA(link.lineStyle.color);
                     link.lineStyle.color = `rgba(${originalRGB}, ${FADE_ALPHA_LINK})`;
                 }
-                // If it IS in linksToHighlight, its original color remains
             });
 
-            // Update ECharts with the new option
             myChart.setOption({
                 series: [{
                     data: currentNodesData,
@@ -342,6 +317,7 @@
 
         // Function to reset the graph view to full visibility
         function resetGraphView() {
+            // Restore original nodes and links (which have label.show:false by default)
             myChart.setOption({
                 series: [{
                     data: originalEchartsNodes,

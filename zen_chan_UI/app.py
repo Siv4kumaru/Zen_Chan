@@ -211,5 +211,77 @@ def get_mood_mapping_data():
     })
     
     
+
+@app.route('/top_domains')
+def top_domains():
+    return render_template('top_domains.html')
+
+@app.route('/daily_activity')
+def daily_activity():
+    return render_template('daily_activity.html')
+
+@app.route('/mood_over_time')
+def mood_over_time():
+    return render_template('mood_over_time.html')
+
+@app.route('/api/top_domains')
+def top_domains_data():
+    with sqlite3.connect(DB) as conn:
+        query = """
+            SELECT domain, SUM(visit_duration_sec) as total_duration
+            FROM visits
+            GROUP BY domain
+            ORDER BY total_duration DESC
+            LIMIT 5
+        """
+        rows = conn.execute(query).fetchall()
+    labels = [row[0] for row in rows]
+    data = [row[1] for row in rows]
+    return jsonify({'labels': labels, 'data': data})
+
+@app.route('/api/daily_activity')
+def daily_activity_data():
+    with sqlite3.connect(DB) as conn:
+        query = """
+            SELECT day_of_week, SUM(visit_duration_sec) / 3600.0 as total_duration
+            FROM visits
+            GROUP BY day_of_week
+            ORDER BY day_of_week
+        """
+        rows = conn.execute(query).fetchall()
+    
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    data = [0] * 7
+    for row in rows:
+        data[row[0]] = row[1]
+
+    return jsonify({'labels': days, 'data': data})
+
+@app.route('/api/mood_over_time')
+def mood_over_time_data():
+    with sqlite3.connect(DB) as conn:
+        query = """
+            SELECT date(visit_datetime) as visit_date, mood, COUNT(*) as mood_count
+            FROM visits
+            WHERE visit_datetime >= date('now', '-7 days')
+            GROUP BY visit_date, mood
+            ORDER BY visit_date, mood
+        """
+        rows = conn.execute(query).fetchall()
+
+    datasets = {}
+    dates = sorted(list(set([row[0] for row in rows])))
+    
+    moods = sorted(list(set([row[1] for row in rows])))
+
+    for mood in moods:
+        datasets[mood] = {'label': mood, 'data': [0] * len(dates), 'fill': True}
+
+    for row in rows:
+        date_index = dates.index(row[0])
+        datasets[row[1]]['data'][date_index] = row[2]
+    
+    return jsonify({'datasets': list(datasets.values())})
+
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)
