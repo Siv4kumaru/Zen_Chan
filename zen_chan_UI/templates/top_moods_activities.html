@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Moods/Activities</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/sub_style.css">
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            background-color: black;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+            height: 100%;
+        }
+        .terminal-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .panel-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column; /* Stack controls and chart vertically */
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .controls {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .controls select {
+            background: black;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 5px;
+            font-family: 'Courier New', monospace;
+        }
+        #topChart {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-container">
+        <div class="terminal-panel">
+            <div class="panel-header">
+                <span class="panel-header-title" id="chartTitle"></span>
+            </div>
+            <div class="panel-content">
+                <div class="controls">
+                    <select id="typeFilter">
+                        <option value="mood">Mood</option>
+                        <option value="pre_labels">Activity</option>
+                    </select>
+                    <select id="timeFilter">
+                        <option value="today">Today</option>
+                        <option value="this_week">This Week</option>
+                        <option value="this_month">This Month</option>
+                        <option value="this_year">This Year</option>
+                        <option value="all_time">All Time</option>
+                    </select>
+                </div>
+                <canvas id="topChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <script>
+        let topChart = null; // Chart.js instance
+
+        async function fetchAndRenderChart() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let type = urlParams.get('type') || 'mood'; // Default from URL or 'mood'
+            let timeFilter = urlParams.get('time_filter') || 'all_time'; // Default from URL or 'all_time'
+
+            // Set dropdowns to current values from URL or defaults
+            document.getElementById('typeFilter').value = type;
+            document.getElementById('timeFilter').value = timeFilter;
+
+            const chartTitleElement = document.getElementById('chartTitle');
+            chartTitleElement.textContent = `Top ${type.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} (${timeFilter.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')})`;
+
+            try {
+                const response = await fetch(`/api/top_moods_activities?type=${type}&time_filter=${timeFilter}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const chartData = await response.json();
+
+                if (topChart) {
+                    topChart.destroy();
+                }
+
+                const ctx = document.getElementById('topChart').getContext('2d');
+                topChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Total Duration (hours)',
+                            data: chartData.data,
+                            backgroundColor: 'rgba(51, 255, 51, 0.7)',
+                            borderColor: '#000',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', // Horizontal bar chart
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { color: '#33ff33' },
+                                grid: { color: '#444' }
+                            },
+                            y: {
+                                ticks: { color: '#33ff33' },
+                                grid: { color: '#444' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: {
+                                display: false, // Title handled by panel-header-title
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error fetching or rendering chart:", error);
+                const canvas = document.getElementById('topChart');
+                const parent = canvas.parentElement;
+                parent.innerHTML = '<p style="color: red; text-align: center;">Failed to load chart data.</p>';
+            }
+        }
+
+        // Event listeners for dropdowns
+        document.getElementById('typeFilter').addEventListener('change', (event) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('type', event.target.value);
+            window.location.search = urlParams.toString(); // Reload iframe with new parameter
+        });
+        document.getElementById('timeFilter').addEventListener('change', (event) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('time_filter', event.target.value);
+            window.location.search = urlParams.toString(); // Reload iframe with new parameter
+        });
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', fetchAndRenderChart);
+    </script>
+</body>
+</html>

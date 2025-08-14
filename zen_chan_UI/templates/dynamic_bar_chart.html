@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Bar Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="stylesheet" href="static/css/style.css">
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            background-color: black;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+        }
+        .terminal-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+            background-color: #111;
+        }
+        .panel-content {
+            flex-grow: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .controls {
+            padding-bottom: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        select {
+            background: black;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 5px;
+        }
+        .chart-container {
+            flex-grow: 1;
+            position: relative;
+        }
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-panel">
+        <div class="panel-header">
+            <span class="panel-header-title">Activity/Mood Over Time</span>
+            <div class="controls">
+                <select id="chartTypePicker">
+                    <option value="pre_labels">Activity</option>
+                    <option value="mood">Mood</option>
+                </select>
+            </div>
+        </div>
+        <div class="panel-content">
+            <div class="chart-container">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let barChart = null;
+
+        async function fetchAndRenderChart() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const timeFilter = urlParams.get('time_filter') || 'all_time';
+            const chartType = document.getElementById('chartTypePicker').value;
+
+            try {
+                const response = await fetch(`/api/dynamic_bar_data?chart_type=${chartType}&time_filter=${timeFilter}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const chartData = await response.json();
+
+                const ctx = document.getElementById('barChart').getContext('2d');
+
+                if (barChart) {
+                    barChart.destroy();
+                }
+
+                if (!chartData.labels || chartData.labels.length === 0) {
+                    const container = document.querySelector('.chart-container');
+                    container.innerHTML = '<p style="text-align: center; margin-top: 40%;">No data available for this selection.</p>';
+                    return;
+                }
+
+                barChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: chartData.datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: true,
+                                ticks: { color: '#33ff33' },
+                                grid: { color: '#444' }
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: { color: '#33ff33' },
+                                grid: { color: '#444' }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#33ff33'
+                                }
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error fetching or rendering chart:", error);
+                const container = document.querySelector('.chart-container');
+                container.innerHTML = '<p style="color: red; text-align: center; margin-top: 40%;">Failed to load chart data.</p>';
+            }
+        }
+
+        document.getElementById('chartTypePicker').addEventListener('change', fetchAndRenderChart);
+
+        // Listen for messages from the parent window to reload
+        window.addEventListener("message", (event) => {
+            if (event.data.type === "reload_iframe") {
+                fetchAndRenderChart();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', fetchAndRenderChart);
+    </script>
+</body>
+</html>

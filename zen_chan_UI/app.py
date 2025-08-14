@@ -18,6 +18,10 @@ def bubble():
 def category():
     return render_template('category_master.html')
 
+@app.route('/dropdown')
+def dropdown():
+    return render_template('dropdown.html')
+
 @app.route('/embedding')
 def embedding():
     return render_template('embedding.html')

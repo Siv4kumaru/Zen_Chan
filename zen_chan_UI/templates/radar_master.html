@@ -2,277 +2,206 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radar Graph: Visit Durations</title>
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="static/css/style.css">
-    <style>
-        html, body {
-            margin: 0;
-            height: 100%;
-            width: 100%;
-            background-color: black; /* Pure black background */
-
-        }
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            grid-template-rows: 1fr;
-            height: 100%;
-        }
-        
-        /* Terminal Panel specific styles (added for completeness from previous responses) */
-        .terminal-panel {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9em;
-        }
-        .panel-header-title {
-            color: #33ff33;
-        }
-        .panel-buttons span {
-            margin-left: 10px; /* Added margin for consistency */
-            cursor: pointer;
-            color: #33ff33;
-        }
-
-        /* NEW: Flex container for controls and graph */
-        .panel-content {
-            flex-grow: 1; /* Takes all remaining vertical space */
-            display: flex; /* Make it a flex container */
-            flex-direction: row; /* Arrange children in a row */
-            padding: 10px; /* Padding for the entire content area */
-            gap: 10px; /* Space between the controls panel and the graph */
-        }
-
-        /* NEW: Styles for the controls sidebar */
-        .controls-panel {
-            flex-shrink: 0; /* Prevent it from shrinking */
-            width: 170px; /* Fixed width for the controls panel */
-            min-width: 100px; /* Minimum width to ensure readability on smaller screens */
-            max-width: 250px; /* Maximum width to prevent it from getting too wide */
-            padding: 15px; /* Internal padding */
-            border: 1px solid #33ff33; /* Match terminal theme */
-            background-color: #000; /* Match terminal theme */
-            display: flex; /* To stack select elements */
-            flex-direction: column; /* Stack select elements vertically */
-            gap: 10px; /* Space between dropdowns */
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
-        }
-
-        /* Adjust select styles for consistency within the new panel */
-        .controls-panel select {
-            background: black;
-            color: #33ff33;
-            border: 1px solid #33ff33;
-            padding: 8px; /* Slightly more padding */
-            width: 100%; /* Make selects fill the control panel width */
-            box-sizing: border-box; /* Include padding and border in width */
-            margin: 0; /* Remove default margin that could interfere with gap */
-            font-family: 'Courier New', monospace; /* Inherit terminal font */
-            font-size: 1em;
-        }
-
-        /* Graph container */
-        #graph {
-            flex-grow: 1; /* Changed from 0 to 1: graph takes up all available remaining horizontal space */
-            flex-shrink: 1; /* Allow it to shrink if window is very narrow */
-            min-width: 0; /* Crucial for flex items to shrink horizontally below their content size */
-            min-height: 0; /* NEW: Crucial for allowing flex items to shrink vertically */
-            height: 125%;
-            padding: 10px; /* Padding inside the graph div */
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
-            
-            display: flex; /* Use flex to center the canvas if needed, or just for robustness */
-            justify-content: center;
-            align-items: center;
-        }
-        
-        /* Ensure canvas fully fills its parent (which is #graph) */
-        #radarChart {
-            width: 100%;
-            height: 100%;
-            display: block; /* Remove extra space below canvas if it's treated as inline */
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radar Graph: Visit Durations</title>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="static/css/style.css">
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      width: 100%;
+      background-color: black;
+    }
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+      height: 100%;
+    }
+    .terminal-panel {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9em;
+    }
+    .panel-header-title {
+      color: #33ff33;
+    }
+    .panel-buttons span {
+      margin-left: 10px;
+      cursor: pointer;
+      color: #33ff33;
+    }
+    .panel-content {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: row;
+      padding: 10px;
+      gap: 10px;
+    }
+    .controls-panel {
+      flex-shrink: 0;
+      width: 170px;
+      padding: 15px;
+      border: 1px solid #33ff33;
+      background-color: #000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+    .controls-panel select {
+      background: black;
+      color: #33ff33;
+      border: 1px solid #33ff33;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      font-family: 'Courier New', monospace;
+      font-size: 1em;
+    }
+    .graphs-container {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      justify-content: space-evenly;
+      align-items: stretch;
+    }
+    .graph {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      padding: 8px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
 </head>
 <body>
-
-    <div class="grid-container">
+  <div class="grid-container">
     <div class="terminal-panel">
-        <div class="panel-header">
-            <span class="panel-header-title">Visit Radar Graph</span>
-            <div class="panel-buttons"><span>_</span><span>□</span></div>
+      <div class="panel-header">
+        <span class="panel-header-title">Visit Radar Graphs</span>
+        <div class="panel-buttons"><span>_</span><span>□</span></div>
+      </div>
+      <div class="panel-content">
+        <!-- Controls Panel -->
+        <div class="controls-panel" style="display:none;">
+          <select id="timeFilter">
+            <option value="today" selected>Today</option>
+            <option value="this_week">This Week</option>
+            <option value="this_month">This Month</option>
+            <option value="this_year">This Year</option>
+            <option value="last_year">Last Year</option>
+            <option value="all_time">All Time</option>
+          </select>
         </div>
-        <div class="panel-content">
-            <!-- Controls Panel (Sidebar) -->
-            <div class="controls-panel">
-                <select id="timeFilter">
-                    <option value="today" selected>Today</option>
-                    <option value="this_week">This Week</option>
-                    <option value="this_month">This Month</option>
-                    <option value="this_year">This Year</option>
-                    <option value="last_year">Last Year</option>
-                    <option value="all_time">All Time</option>
-                </select>
-
-                <select id="dimFilter">
-                    <option value="mood" selected>Mood</option>
-                    <option value="pre_labels">Activity</option>
-                </select>
-            </div>
-
-            <!-- Graph Area -->
-            <div id="graph">
-                <!-- The canvas will be dynamically created here -->
-            </div>
+        <!-- Two Graphs Side by Side -->
+        <div class="graphs-container">
+          <div class="graph">
+            <canvas id="moodChart"></canvas>
+          </div>
+          <div class="graph">
+            <canvas id="activityChart"></canvas>
+          </div>
         </div>
+      </div>
     </div>
-    </div>
-    <script>
-    let radarChart = null; // To hold the Chart.js instance
+  </div>
 
-    async function fetchAndRenderChart() {
-        const chartType = document.getElementById('dimFilter').value;
-        const timeFilter = document.getElementById('timeFilter').value;
+  <script>
+    let moodChart = null;
+    let activityChart = null;
 
-        try {
-            const response = await fetch(`/api/radar_data?type=${chartType}&time_filter=${timeFilter}`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    async function fetchAndRenderChart(chartType, canvasId, chartTitle) {
+      const timeFilter = document.getElementById('timeFilter').value;
+      const response = await fetch(`/api/radar_data?type=${chartType}&time_filter=${timeFilter}`);
+      const chartData = await response.json();
+
+      const ctx = document.getElementById(canvasId).getContext('2d');
+
+      if (chartType === 'mood' && moodChart) {
+        moodChart.destroy();
+      }
+      if (chartType === 'pre_labels' && activityChart) {
+        activityChart.destroy();
+      }
+
+      if (!chartData.labels || chartData.labels.length === 0) {
+        ctx.canvas.parentNode.innerHTML = `<p style="color:#888;text-align:center;">No data for ${chartTitle}</p>`;
+        return;
+      }
+
+      let maxDataValue = 0;
+      chartData.datasets.forEach(dataset => {
+        dataset.data.forEach(value => {
+          maxDataValue = Math.max(maxDataValue, value);
+        });
+      });
+      let dynamicMax = Math.max(Math.ceil(maxDataValue * 1.1), 5);
+
+      const newChart = new Chart(ctx, {
+        type: 'radar',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          elements: { line: { borderWidth: 5 }},
+          scales: {
+            r: {
+              min: 0,
+              max: dynamicMax,
+              angleLines: { color: '#33ff33' },
+              grid: { color: '#444' },
+              pointLabels: { color: '#33ff33', font: { size: 12 }},
+              ticks: {
+                color: '#33ff33',
+                backdropColor: "rgba(0,0,0,0)",
+                callback: v => (v % 1 === 0 ? v : null)
+              }
             }
-            const chartData = await response.json();
-
-            const graphDiv = document.getElementById('graph');
-
-            // 1. Destroy old chart if it exists
-            if (radarChart) {
-                radarChart.destroy();
-                radarChart = null; // Clear the reference
-            }
-
-            // 2. Clear any existing content in the graph div (like the old canvas or "no data" message)
-            graphDiv.innerHTML = ''; 
-            
-            if (!chartData.labels || chartData.labels.length === 0) {
-                // Display "No data" message directly in the div
-                const noDataMessage = document.createElement('p');
-                noDataMessage.textContent = "No data available for this selection.";
-                noDataMessage.style.color = '#888';
-                noDataMessage.style.textAlign = 'center';
-                noDataMessage.style.marginTop = '20%'; // Adjust vertical centering
-                noDataMessage.style.flexGrow = '1'; // Ensure it centers within flex
-                noDataMessage.style.display = 'flex'; // For centering text
-                noDataMessage.style.alignItems = 'center';
-                noDataMessage.style.justifyContent = 'center';
-                graphDiv.appendChild(noDataMessage);
-                return;
-            }
-
-            // 3. Create a brand new canvas element
-            const newCanvas = document.createElement('canvas');
-            newCanvas.id = 'radarChart'; // Re-assign the ID
-            graphDiv.appendChild(newCanvas); // Append the new canvas to the graph div
-
-            const ctx = newCanvas.getContext('2d'); // Get context from the NEW canvas
-            
-            // Calculate dynamic max for the r-axis
-            let maxDataValue = 0;
-            chartData.datasets.forEach(dataset => {
-                dataset.data.forEach(value => {
-                    maxDataValue = Math.max(maxDataValue, value);
-                });
-            });
-
-            // Add a buffer and ensure a minimum scale for better visualization
-            let dynamicMax = maxDataValue * 1.1; // Add 10% buffer
-            dynamicMax = Math.max(dynamicMax, 5); // Ensure a minimum scale (e.g., 0-5) if data is low
-            dynamicMax = Math.ceil(dynamicMax); // Round up to the nearest whole number for cleaner ticks
-
-            radarChart = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: chartData.labels,
-                    datasets: chartData.datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    elements: {
-                        line: {
-                            borderWidth: 5
-                        }
-                    },
-                    scales: {
-                        r: {
-                            min: 0,
-                            max: dynamicMax, // Set the dynamically calculated max here
-                            angleLines: {
-                                color: '#33ff33'
-                            },
-                            grid: {
-                                color: '#444'
-                            },
-                            pointLabels: {
-                                color: '#33ff33',
-                                font: {
-                                    size: 12
-                                }
-                            },
-                            ticks: {
-                                color: '#33ff33',
-                                backdropColor: "rgba(0, 0, 0, 0)",
-                                callback: function(value) {
-                                    if (value % 1 === 0) {
-                                        return value;
-                                    }
-                                    return null;
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: false,
-                            text: `Average Visit Duration by ${chartType === 'mood' ? 'Mood' : 'Pre-Labels'} (${timeFilter.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')})`,
-                            font: {
-                                size: 18
-                            },
-                            color: '#33ff33'
-                        },
-                        legend: {
-                            labels: {
-                                color: '#33ff33'
-                            },
-                            display: false,
-                            position: 'top',
-                        }
-                    }
-                }
-            });
-
-        } catch (error) {
-            console.error("Error fetching or rendering chart:", error);
-            const graphDiv = document.getElementById('graph');
-            graphDiv.innerHTML = '<p style="color: red; text-align: center; margin-top: 20%;">Failed to load chart data. Please check the console for details.</p>';
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: chartTitle + ` (${timeFilter.replace('_',' ')})`,
+              color: '#33ff33'
+            },
+            legend: { display: false }
+          }
         }
+      });
+
+      if (chartType === 'mood') {
+        moodChart = newChart;
+      } else {
+        activityChart = newChart;
+      }
     }
 
-    // Event listeners for controls
-    document.getElementById('dimFilter').addEventListener('change', fetchAndRenderChart);
-    document.getElementById('timeFilter').addEventListener('change', fetchAndRenderChart);
+    function refreshCharts() {
+      fetchAndRenderChart('mood', 'moodChart', 'Mood');
+      fetchAndRenderChart('pre_labels', 'activityChart', 'Activity');
+    }
 
-    // Initial chart load
-    document.addEventListener('DOMContentLoaded', fetchAndRenderChart);
-    </script>
-
+    document.getElementById('timeFilter').addEventListener('change', refreshCharts);
+    document.addEventListener('DOMContentLoaded', refreshCharts);
+  </script>
 </body>
 </html>
