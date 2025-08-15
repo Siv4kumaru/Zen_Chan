@@ -1,7 +1,11 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response, stream_with_context
 import sqlite3
 from collections import defaultdict
 from datetime import datetime, timedelta
+import sys
+import json
+from big_boi import load_profile_data
+
 
 app = Flask(__name__)
 DB = "..\\data.db"
@@ -96,6 +100,8 @@ def radar_data():
     """
     chart_type = request.args.get('type', 'mood')
     time_filter = request.args.get('time_filter', 'all_time') # New parameter
+    # remove if want control
+    time_filter = "all_time"
 
     if chart_type not in ['pre_labels', 'mood']:
         return jsonify({"error": "Invalid chart type. Must be 'pre_labels' or 'mood'."}), 400
@@ -193,11 +199,11 @@ def mood_over_time():
 def top_domains_data():
     with sqlite3.connect(DB) as conn:
         query = """
-            SELECT domain, SUM(visit_duration_sec) as total_duration
+            SELECT domain, SUM(visit_duration_sec)/3600  as total_duration
             FROM visits
             GROUP BY domain
             ORDER BY total_duration DESC
-            LIMIT 5
+            LIMIT 6
         """
         rows = conn.execute(query).fetchall()
     labels = [row[0] for row in rows]
@@ -222,17 +228,44 @@ def daily_activity_data():
 
     return jsonify({'labels': days, 'data': data})
 
-@app.route('/api/mood_over_time')
-def mood_over_time_data():
+@app.route('/api/mood_weekly_avg')
+def mood_weekly_avg():
     with sqlite3.connect(DB) as conn:
         query = """
-            SELECT date(visit_datetime) as visit_date, mood, COUNT(*) as mood_count
-            FROM visits
-            WHERE visit_datetime >= date('now', '-7 days')
-            GROUP BY visit_date, mood
-            ORDER BY visit_date, mood
+        SELECT 
+            strftime('%w', visit_datetime) AS weekday,   -- 0=Sunday, 6=Saturday
+            (SUM(visit_duration_sec) / 3600.0) / 
+            ( (julianday(MAX(visit_datetime)) - julianday(MIN(visit_datetime))) / 7.0 ) 
+            AS avg_hours
+        FROM visits
+        GROUP BY weekday
+        ORDER BY weekday;
+
         """
         rows = conn.execute(query).fetchall()
+
+    # Map weekdays to names
+    weekday_map = {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+    }
+
+    labels = [weekday_map[str(row[0])] for row in rows]
+    data = [row[1] for row in rows]
+
+    return {
+        "labels": labels,
+        "datasets": [{
+            "label": "Average Hours Spent per Weekday",
+            "data": data
+        }]
+    }
+
 
     datasets = {}
     dates = sorted(list(set([row[0] for row in rows])))
@@ -310,6 +343,109 @@ def get_mood_color(mood):
         # Add more moods and colors as needed
     }
     return colors.get(mood.lower(), 'rgba(100, 100, 100, 0.6)') # Default grey
+
+@app.route("/api/change_time")
+def change_in_time(time):
+    '''time= Today, This Week, This Month, This Year, Last Year, All time'''
+    pass
+
+
+# user profile chosing
+import os, json, re
+from PIL import Image, ImageDraw, ImageFont
+import shutil
+
+CHROME_USER_DATA = os.path.join(os.environ.get("USERPROFILE"), "AppData", "Local", "Google", "Chrome", "User Data")
+PROFILE_PIC_DIR = os.path.join("static", "profile_pics")
+os.makedirs(PROFILE_PIC_DIR, exist_ok=True)
+
+def generate_placeholder(name, profile_id):
+    """Generate a colored placeholder avatar with initials."""
+    initials = "".join([part[0].upper() for part in name.split()[:2]]) or "?"
+    
+    img = Image.new("RGB", (128, 128), (100, 100, 200))  # background color
+    draw = ImageDraw.Draw(img)
+    
+    try:
+        font = ImageFont.truetype("arial.ttf", 50)
+    except:
+        font = ImageFont.load_default()
+    
+    # Use textbbox (Pillow 8.0+)
+    bbox = draw.textbbox((0, 0), initials, font=font)
+    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    
+    draw.text(((128 - w) / 2, (128 - h) / 2), initials, fill="white", font=font)
+    
+    path = os.path.join(PROFILE_PIC_DIR, f"{profile_id}.png")
+    img.save(path)
+    return f"/static/profile_pics/{profile_id}.png"
+
+def get_avatar_path(profile_id, name, avatar_icon):
+    # 1. Check Accounts/Avatar Images (preferred, real profile photo)
+    avatar_images_dir = os.path.join(CHROME_USER_DATA, profile_id, "Accounts", "Avatar Images")
+    if os.path.isdir(avatar_images_dir):
+        files = [f for f in os.listdir(avatar_images_dir) ]
+        if files:
+            newest_file = max(files, key=lambda f: os.path.getmtime(os.path.join(avatar_images_dir, f)))
+            src = os.path.join(avatar_images_dir, newest_file)  # take newest image
+            dst = os.path.join(PROFILE_PIC_DIR, f"{profile_id}.png")
+            if not os.path.exists(dst):
+                try:
+                    Image.open(src).save(dst)  # normalize to PNG
+                except:
+                    shutil.copy2(src, dst)
+            return f"/static/profile_pics/{profile_id}.png"
+
+
+   
+
+    # 3. Fallback: generate placeholder
+    return generate_placeholder(name, profile_id)
+
+
+
+def get_chrome_profiles():
+    local_state_path = os.path.join(CHROME_USER_DATA, "Local State")
+    with open(local_state_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    profiles = data.get("profile", {}).get("info_cache", {})
+
+    profile_list = []
+    for profile_id, info in profiles.items():
+        name = info.get("name", profile_id)
+        avatar = get_avatar_path(profile_id, name, info.get("avatar_icon"))
+        profile_list.append({
+            "id": profile_id,
+            "name": name,
+            "avatar": avatar
+        })
+    return profile_list
+
+@app.route("/choose_profile")
+def choose_profile():
+    profiles = get_chrome_profiles()
+    return render_template("choose_profile.html", profiles=profiles)
+
+def load_profile_data_with_cleanup(profile, name,time="today"):
+    try:
+        # yield actual work
+        yield from load_profile_data(profile, time)
+    finally:
+
+        with open("last_profile.json", "w") as f:
+            json.dump({"profile": profile, "name": name}, f)
+
+@app.route("/api/load_profile/<profile>/<name>")
+def load_profile(profile,name):
+    try:
+        return Response(
+            stream_with_context(load_profile_data_with_cleanup(profile,name, time="today")),
+            mimetype="text/event-stream"
+        )
+    except Exception as e:
+        return Response(f"Error loading profile: {e}", status=500)
+
 
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)

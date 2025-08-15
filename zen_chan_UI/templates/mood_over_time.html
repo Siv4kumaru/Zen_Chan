@@ -44,69 +44,82 @@
     <div class="grid-container">
         <div class="terminal-panel">
             <div class="panel-header">
-                <span class="panel-header-title">Mood Distribution Over Time</span>
+                <span class="panel-header-title">Avg time on days of week</span>
             </div>
             <div class="panel-content">
                 <canvas id="moodOverTimeChart"></canvas>
             </div>
         </div>
     </div>
-    <script>
-        async function fetchAndRenderChart() {
-            try {
-                const response = await fetch('/api/mood_over_time');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const chartData = await response.json();
+<script>
+    async function fetchAndRenderChart() {
+        try {
+            const response = await fetch('/api/mood_weekly_avg');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const chartData = await response.json();
 
-                const ctx = document.getElementById('moodOverTimeChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        datasets: chartData.datasets
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: {
-                                type: 'time',
-                                time: {
-                                    unit: 'day'
-                                },
-                                ticks: {
-                                    color: '#33ff33'
-                                },
-                                grid: {
-                                    color: '#444'
-                                }
-                            },
-                            y: {
-                                stacked: true,
-                                ticks: {
-                                    color: '#33ff33'
-                                },
-                                grid: {
-                                    color: '#444'
-                                }
-                            }
+            const ctx = document.getElementById('moodOverTimeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        ...chartData.datasets[0],
+                        backgroundColor: [
+                            'rgba(51, 255, 51, 0.7)',   // neon green
+                            'rgba(51, 153, 255, 0.7)',  // neon blue
+                            'rgba(255, 51, 153, 0.7)',  // neon pink
+                            'rgba(255, 204, 51, 0.7)',  // neon yellow
+                            'rgba(153, 51, 255, 0.7)',  // neon purple
+                            'rgba(255, 102, 51, 0.7)',  // neon orange
+                            'rgba(0, 255, 204, 0.7)'    // neon cyan
+                        ],
+                        borderColor: [
+                            'rgba(51, 255, 51, 1)',
+                            'rgba(51, 153, 255, 1)',
+                            'rgba(255, 51, 153, 1)',
+                            'rgba(255, 204, 51, 1)',
+                            'rgba(153, 51, 255, 1)',
+                            'rgba(255, 102, 51, 1)',
+                            'rgba(0, 255, 204, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: { color: '#33ff33' },
+                            grid: { color: '#444' }
                         },
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    color: '#33ff33'
-                                }
-                            }
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Avg Hours',
+                                color: '#33ff33'
+                            },
+                            ticks: { color: '#33ff33' },
+                            grid: { color: '#444' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#33ff33' }
                         }
                     }
-                });
-            } catch (error) {
-                console.error("Error fetching or rendering chart:", error);
-            }
+                }
+            });
+        } catch (error) {
+            console.error("Error fetching or rendering chart:", error);
         }
-        document.addEventListener('DOMContentLoaded', fetchAndRenderChart);
-    </script>
+    }
+    document.addEventListener('DOMContentLoaded', fetchAndRenderChart);
+</script>
+
 </body>
 </html>

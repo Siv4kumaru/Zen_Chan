@@ -159,33 +159,44 @@
       const newChart = new Chart(ctx, {
         type: 'radar',
         data: chartData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          elements: { line: { borderWidth: 5 }},
-          scales: {
-            r: {
-              min: 0,
-              max: dynamicMax,
-              angleLines: { color: '#33ff33' },
-              grid: { color: '#444' },
-              pointLabels: { color: '#33ff33', font: { size: 12 }},
-              ticks: {
-                color: '#33ff33',
-                backdropColor: "rgba(0,0,0,0)",
-                callback: v => (v % 1 === 0 ? v : null)
-              }
-            }
-          },
-          plugins: {
-            title: {
-              display: true,
-              text: chartTitle + ` (${timeFilter.replace('_',' ')})`,
-              color: '#33ff33'
-            },
-            legend: { display: false }
-          }
+options: {
+  responsive: true,
+  maintainAspectRatio: false,
+  elements: { line: { borderWidth: 5 }},
+  scales: {
+    r: {
+      min: 0,
+      max: dynamicMax,
+      angleLines: { color: '#33ff33' },
+      grid: { color: '#444' },
+      pointLabels: { color: '#33ff33', font: { size: 12 }},
+      ticks: {
+        color: '#33ff33',
+        backdropColor: "rgba(0,0,0,0)",
+        callback: v => (v % 1 === 0 ? v : null)
+      }
+    }
+  },
+  plugins: {
+    title: {
+      display: true,
+      text: chartTitle,
+      color: '#12ff25',
+      font: { size: 16 }
+    },
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          let label = context.label || '';
+          let value = context.raw || 0;
+          return `${label}: ${value.toFixed(1)} hours`;
         }
+      }
+    }
+  }
+}
+
       });
 
       if (chartType === 'mood') {
