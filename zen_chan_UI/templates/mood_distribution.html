@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Distribution by Hour</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/sub_style.css">
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            background-color: black;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+            height: 100%;
+        }
+        .terminal-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .panel-content {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #moodDistributionChart {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-container">
+        <div class="terminal-panel">
+            <div class="panel-header">
+                <span class="panel-header-title">Mood Distribution by Hour</span>
+            </div>
+            <div class="panel-content">
+                <canvas id="moodDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+<script>
+    async function fetchAndRenderChart() {
+        try {
+            const response = await fetch('/api/mood_distribution_by_hour');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            let chartData = await response.json();
+
+            // Neon colour palette (8 colours)
+            const colors = [
+                'rgba(51, 255, 51, 0.7)',   // neon green
+                'rgba(51, 153, 255, 0.7)',  // neon blue
+                'rgba(255, 51, 153, 0.7)',  // neon pink
+                'rgba(255, 204, 51, 0.7)',  // neon yellow
+                'rgba(153, 51, 255, 0.7)',  // neon purple
+                'rgba(255, 102, 51, 0.7)',  // neon orange
+                'rgba(0, 255, 204, 0.7)',   // neon cyan
+                'rgba(255, 0, 102, 0.7)'    // neon red-pink
+            ];
+
+            // Assign colors to datasets
+            chartData.datasets = chartData.datasets.map((ds, i) => ({
+                ...ds,
+                backgroundColor: colors[i % colors.length],
+                borderColor: colors[i % colors.length].replace('0.7', '1'),
+                borderWidth: 1
+            }));
+
+            // 🔥 Reorder datasets so the max value for each hour is always last (drawn on top)
+            function reorderDatasets(datasets) {
+                const reordered = [...datasets];
+                for (let i = 0; i < chartData.labels.length; i++) {
+                    // Find dataset index with max value at this hour
+                    let maxIdx = 0;
+                    let maxVal = reordered[0].data[i] || 0;
+                    for (let j = 1; j < reordered.length; j++) {
+                        if ((reordered[j].data[i] || 0) > maxVal) {
+                            maxVal = reordered[j].data[i];
+                            maxIdx = j;
+                        }
+                    }
+                    // Move that dataset to the end of the array
+                    const [maxDataset] = reordered.splice(maxIdx, 1);
+                    reordered.push(maxDataset);
+                }
+                return reordered;
+            }
+
+            chartData.datasets = reorderDatasets(chartData.datasets);
+
+            const ctx = document.getElementById('moodDistributionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: chartData.datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true, // ✅ stacked
+                            ticks: { color: '#33ff33' },
+                            grid: { color: '#444' }
+                        },
+                        y: {
+                            stacked: true, // ✅ stacked
+                            title: {
+                                display: true,
+                                text: 'Duration (hours)',
+                                color: '#33ff33'
+                            },
+                            ticks: { color: '#33ff33' },
+                            grid: { color: '#444' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#33ff33' }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Error fetching or rendering chart:", error);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', fetchAndRenderChart);
+</script>
+
+</body>
+</html>

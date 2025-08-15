@@ -26,9 +26,9 @@ def dropdown():
 def embedding():
     return render_template('embedding.html')
 
-@app.route('/map')
-def map_master():
-    return render_template('map_master.html')
+@app.route('/mood_distribution')
+def mood_distribution():
+    return render_template('mood_distribution.html')
 
 @app.route('/mood')
 def mood_master():
@@ -175,45 +175,6 @@ def radar_data():
     }
 
     return jsonify(response_data)
-
-@app.route('/api/mood_mapping_data')
-def get_mood_mapping_data():
-    with sqlite3.connect(DB) as conn: # Use 'with' statement for proper connection handling
-        conn.row_factory = sqlite3.Row  # Enable row factory for dict-like access
-        cursor = conn.cursor()
-        rules = cursor.execute('SELECT pre_label, time_of_day, mood FROM mood_rules').fetchall()
-    
-    # Collect all unique labels for each category
-    all_pre_labels = sorted(list(set(r['pre_label'] for r in rules)))
-    all_times_of_day = sorted(list(set(r['time_of_day'] for r in rules)))
-    all_moods = sorted(list(set(r['mood'] for r in rules)))
-
-    # Prepare links data with counts, using string labels (JS will map to IDs)
-    raw_links = defaultdict(int) # Counts for (source_label, target_label) tuples
-
-    for rule in rules:
-        # Link from pre_label to time_of_day
-        raw_links[(rule['pre_label'], rule['time_of_day'])] += 1
-        # Link from time_of_day to mood
-        raw_links[(rule['time_of_day'], rule['mood'])] += 1
-
-    # Convert raw_links to a list of dicts for JSON serialization
-    processed_links = []
-    for (source_label, target_label), value in raw_links.items():
-        processed_links.append({
-            "source": source_label,
-            "target": target_label,
-            "value": value
-        })
-
-    # Return only the raw data needed by JS
-    return jsonify({
-        "pre_labels": all_pre_labels,
-        "time_of_day_labels": all_times_of_day,
-        "mood_labels": all_moods,
-        "links": processed_links
-    })
-    
     
 
 @app.route('/top_domains')
@@ -286,6 +247,69 @@ def mood_over_time_data():
         datasets[row[1]]['data'][date_index] = row[2]
     
     return jsonify({'datasets': list(datasets.values())})
+
+@app.route('/api/mood_distribution_by_hour')
+def mood_distribution_by_hour():
+    with sqlite3.connect(DB) as conn:
+        conn.row_factory = sqlite3.Row
+        query = """
+            SELECT
+                CAST(strftime('%H', visit_datetime) AS INTEGER) as hour_of_day,
+                mood,
+                SUM(visit_duration_sec) / 3600.0 as total_duration
+            FROM visits
+            WHERE mood IS NOT NULL
+            GROUP BY hour_of_day, mood
+            ORDER BY hour_of_day, mood
+        """
+        rows = conn.execute(query).fetchall()
+
+    # Initialize data structure for Chart.js
+    hours = [f"{h:02d}:00" for h in range(24)] # Labels for 00:00 to 23:00
+    all_moods = sorted(list(set([row['mood'] for row in rows])))
+
+    # Prepare datasets for Chart.js stacked bar chart
+    datasets = []
+    for mood in all_moods:
+        data_for_mood = [0] * 24 # Initialize counts for each hour to 0
+        datasets.append({
+            'label': mood,
+            'data': data_for_mood,
+            'backgroundColor': get_mood_color(mood), # Function to get color for mood
+            'borderColor': get_mood_color(mood),
+            'borderWidth': 1
+        })
+    
+    # Populate data
+    for row in rows:
+        hour_index = row['hour_of_day']
+        mood = row['mood']
+        total_duration = row['total_duration']
+        
+        # Find the correct dataset for the mood
+        for dataset in datasets:
+            if dataset['label'] == mood:
+                dataset['data'][hour_index] = total_duration
+                break
+    
+    return jsonify({
+        'labels': hours,
+        'datasets': datasets
+    })
+
+def get_mood_color(mood):
+    # Simple color mapping for moods. Extend as needed.
+    colors = {
+        'happy': 'rgba(75, 192, 192, 0.6)',
+        'neutral': 'rgba(255, 206, 86, 0.6)',
+        'sad': 'rgba(255, 99, 132, 0.6)',
+        'calm': 'rgba(153, 102, 255, 0.6)',
+        'excited': 'rgba(255, 159, 64, 0.6)',
+        'angry': 'rgba(200, 0, 0, 0.6)',
+        'anxious': 'rgba(54, 162, 235, 0.6)',
+        # Add more moods and colors as needed
+    }
+    return colors.get(mood.lower(), 'rgba(100, 100, 100, 0.6)') # Default grey
 
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)
