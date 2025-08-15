@@ -1,0 +1,33 @@
+<div class="grid-container">
+    <div class="terminal-panel">
+        <div class="panel-header">
+            <span class="panel-header-title">Visit Radar Graph</span>
+            <div class="panel-buttons"><span>_</span><span>□</span></div>
+        </div>
+        <div class="panel-content">
+            <!-- Controls Panel (Sidebar) -->
+            <div class="controls-panel">
+                <select id="timeFilter">
+                    <option value="today" selected>Today</option>
+                    <option value="this_week">This Week</option>
+                    <option value="this_month">This Month</option>
+                    <option value="this_year">This Year</option>
+                    <option value="last_year">Last Year</option>
+                    <option value="all_time">All Time</option>
+                </select>
+
+                <select id="dimFilter">
+                    <option value="mood" selected>Mood</option>
+                    <option value="pre_labels">Activity</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // The original dropdown.html had no script for rendering the chart,
+    // so I'm assuming it was meant to be a placeholder or incomplete.
+    // If there was a chart, its rendering logic would go here.
+    // For now, I'll leave it as is, assuming the Flask route for /dropdown
+    // will render the actual chart.
+</script>

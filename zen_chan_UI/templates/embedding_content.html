@@ -1,0 +1,158 @@
+<div class="grid-container">
+    <div class="terminal-panel">
+        <div class="panel-header">
+            <span class="panel-header-title">Embedding</span>
+            <div class="panel-buttons"><span>_</span><span>□</span></div>
+        </div>
+        <div class="panel-content">
+            <div>
+                <select id="timeFilter">
+                    <option value="today">Today</option>
+                    <option value="all">All Time</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                </select>
+
+                <select id="dimFilter">
+                    <option value="2d">2D</option>
+                    <option value="3d">3D</option>
+                </select>
+            </div>
+
+            <div id="graph"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadGraph() {
+    const time = $('#timeFilter').val();
+    const dim = $('#dimFilter').val();
+
+    $.get('/get_data_embeddings', { time: time, dim: dim }, function(data) {
+        const traces = [];
+        const groupedByMood = {};
+
+        // 1. Group data points by pre_labels and accumulate duration
+        data.forEach(d => {
+            // Use 'Unknown Category' as a fallback if pre_labels is null or undefined
+            const categoryKey = d.pre_labels || 'Unknown Category';
+
+            if (!groupedByMood[categoryKey]) {
+                groupedByMood[categoryKey] = {
+                    points: [],
+                    color: d.color,
+                    totalDuration: 0
+                };
+            }
+            groupedByMood[categoryKey].points.push(d);
+            groupedByMood[categoryKey].totalDuration += (d.duration || 0);
+        });
+
+        // Convert the groupedByMood object into an array for sorting
+        const categoriesArray = Object.keys(groupedByMood).map(categoryName => ({
+            name: categoryName,
+            data: groupedByMood[categoryName]
+        }));
+
+        // Sort the categories by totalDuration in descending order
+        categoriesArray.sort((a, b) => b.data.totalDuration - a.data.totalDuration);
+
+        // 2. Create a separate trace for each category (pre_labels) in sorted order
+        categoriesArray.forEach(categoryItem => {
+            const category = categoryItem.name;
+            const categoryData = categoryItem.data.points;
+            const categoryColor = categoryItem.data.color;
+            const cumulativeDurationSeconds = categoryItem.data.totalDuration;
+            const cumulativeDurationHours = (cumulativeDurationSeconds / 3600).toFixed(2);
+
+            let trace;
+            if (dim === "2d") {
+                trace = {
+                    x: x,
+                    y: y,
+                    mode: 'markers',
+                    type: 'scatter',
+                    name: `${category} (${cumulativeDurationHours}h)`,
+                    text: hoverLabels,
+                    hoverinfo: 'text',
+                    marker: { color: categoryColor, size: 10 } // Slightly increased size for 2D
+                };
+            } else { // 3d
+                trace = {
+                    x: x,
+                    y: y,
+                    z: z,
+                    mode: 'markers',
+                    type: 'scatter3d',
+                    name: `${category} (${cumulativeDurationHours}h)`,
+                    text: hoverLabels,
+                    hoverinfo: 'text',
+                    marker: { color: categoryColor, size: 8 } // Slightly increased size for 3D
+                };
+            }
+            traces.push(trace);
+        });
+
+        // 3. Define the layout with legend styling
+        const layout = {
+            autosize: true, // Make Plotly resize to fill its container
+            margin: { l: 0, r: 0, b: 0, t: 0 }, // Remove all margins to maximize plot area
+            paper_bgcolor: 'black',
+            plot_bgcolor: 'black',
+            font: {
+                color: '#33ff33',
+                family: 'Courier New, monospace'
+            },
+            legend: {
+                x: 0,           // Centered horizontally
+                y: 0,             // Bottom of the plot area
+                xanchor: 'right', // Anchor point for x position
+                yanchor: 'bottom', // Anchor point for y position
+                bgcolor: 'black',
+                bordercolor: '#33ff33',
+                borderwidth: 1,
+                font: {
+                    color: '#33ff33'
+                }
+            },
+            showlegend: true
+        };
+
+        // Add 3D scene config if 3D
+        if (dim === "3d") {
+            layout.scene = {
+                xaxis: { showbackground: false, gridcolor: '#1a1a1a', zerolinecolor: '#33ff33', showticklabels: false, title: '' },
+                yaxis: { showbackground: false, gridcolor: '#1a1a1a', zerolinecolor: '#33ff33', showticklabels: false, title: '' },
+                zaxis: { showbackground: false, gridcolor: '#1a1a1a', zerolinecolor: '#33ff33', showticklabels: false, title: '' },
+                camera: { zoom: 1.2 } // Initial zoom for 3D graphs (1.0 is default, higher zooms in)
+            };
+        }
+
+        Plotly.newPlot('graph', traces, layout);
+
+        // Add a resize listener to ensure Plotly redraws if window resizes
+        // This helps the graph adapt to the div's current size after browser resize.
+        window.addEventListener('resize', function() {
+            Plotly.relayout('graph', {
+                'autosize': true,
+                'height': $('#graph').height(), // Get current height of the div
+                'width': $('#graph').width()   // Get current width of the div
+            });
+        });
+    });
+}
+
+// Trigger graph load on dropdown change
+$('#timeFilter, #dimFilter').change(loadGraph);
+
+// Load graph with default "today" filter and 3D dimension on page load
+$(document).ready(function() {
+    $('#timeFilter').val('today');
+    $('#dimFilter').val('3d'); // Changed default dimension to 3D
+    loadGraph();
+});
+</script>
