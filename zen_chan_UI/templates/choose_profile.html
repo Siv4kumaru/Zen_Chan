@@ -120,7 +120,7 @@
   let progressBar = document.getElementById("progressBar");
   
   // Open SSE connection
-  const eventSource = new EventSource(`/api/load_profile/${profileId}/${profileName}`);
+  const eventSource = new EventSource(`/api/load_profile/${profileId}/${profileName}/this_week`);
   
   let step = 0;
   const stepsCount = 7; // adjust to match backend steps

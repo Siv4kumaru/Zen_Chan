@@ -7,16 +7,41 @@
     <link rel="stylesheet" href="static/css/style.css">
 </head>
 <style>
+
  
-/* Transparent clickable overlay */
-.click-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
+.modal {
+  z-index: 99999 !important;   /* higher than your panels */
 }
+
+.modal-backdrop {
+  z-index: 99998 !important;   /* backdrop just below modal */
+}
+
+    /* Terminal-style modal */
+    .modal-content {
+      background-color: #111;
+      border: 1px solid #6cff6c;
+      color: #aefcae;
+      font-family: "Courier New", monospace;
+      padding: 10px;
+    }
+    .terminal-output {
+      background: #000;
+      padding: 10px;
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #6cff6c;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    .progress {
+      height: 10px;
+      background-color: #222;
+      border: 1px solid #6cff6c;
+    }
+    .progress-bar {
+      background-color: #6cff6c;
+    }
 </style>
 <body>
     <div class="grid-container">
@@ -83,7 +108,37 @@ _______________\:::\____/:::/__\:::\   \:::\____/:: /    |::|   /::\____\       
         <!-- daily_activity.html panel -->
         <div class="terminal-panel mood-panel">
 
-            <div class="panel-content" style="margin:0;padding:0;width:100%;height:100%;"><iframe src="/dropdown" title="dropdown" scrolling="no" style="margin:0;padding:0;width:100%;height:100%;border:none;display:block;"></iframe></div>
+            <div class="panel-content" style="margin:0;padding:0;width:100%;height:100%;">
+                <div class="grid-container" style="margin:0;padding:0;width:100%;height:100%;border:none;display:block;">
+                <div class="terminal-panel">
+                    <div class="panel-header">
+                        <span class="panel-header-title">Visit Radar Graph</span>
+                        <div class="panel-buttons"><span>_</span><span>□</span></div>
+                     </div>
+                     <div class="panel-content">
+                        <!-- Controls Panel (Sidebar) -->
+                        <div class="controls-panel">
+                            <select id="timeFilter" onchange="runProcess('{{ profile_id }}', '{{ profile_name }}',this.value)">
+                                <option value="today" selected>Today</option>
+                                <option value="this_week">This Week</option>
+                                <option value="this_month">This Month</option>
+                                <option value="this_year">This Year</option>
+                                <option value="last_year">Last Year</option>
+                                <option value="all_time">All Time</option>
+                            </select>
+                            <!-- 
+                            <select id="dimFilter">
+                                <option value="mood" selected>Mood</option>
+                                <option value="pre_labels">Activity</option>
+                            </select> -->
+                        </div>
+
+                        
+
+                     </div>
+                     </div>
+                     </div>
+                     </div>
         </div>
 
         <!-- mood_over_time.html panel -->
@@ -96,6 +151,139 @@ _______________\:::\____/:::/__\:::\   \:::\____/:: /    |::|   /::\____\       
             <div class="panel-content" style="margin:0;padding:0;width:100%;height:100%;"><iframe src="/mood_distribution"style="margin:0;padding:0;width:100%;height:100%;border:none;display:block;" title="hour" scrolling="no"></iframe></div>
         </div>
     </div>
+
+<!-- Modal -->
+<div class="modal" id="processModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <h5>> Running process...</h5>
+      <div class="terminal-output" id="terminal"></div>
+      <div class="progress">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  z-index: 99999;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-dialog {
+  max-width: 500px;
+  width: 100%;
+}
+
+.modal-content {
+  background-color: #111;
+  border: 1px solid #6cff6c;
+  color: #aefcae;
+  font-family: "Courier New", monospace;
+  padding: 20px;
+  border-radius: 6px;
+  box-shadow: 0 0 15px #6cff6c;
+}
+
+.terminal-output {
+  background: #000;
+  padding: 10px;
+  height: 200px;
+  overflow-y: auto;
+  border: 1px solid #6cff6c;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+/* Progress bar container */
+.progress {
+  height: 12px;
+  background-color: #000;
+  border: 1px solid #6cff6c;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+/* Shining green progress bar */
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(
+    90deg,
+    #6cff6c,
+    #b6ffb6,
+    #6cff6c
+  );
+  background-size: 200% 100%;
+  animation: shine 2s linear infinite;
+  transition: width 0.3s ease;
+}
+
+@keyframes shine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        var defaultTime = "{{ time_filter }}"; // pass from Flask
+        const select = document.getElementById("timeFilter");
+        select.value = defaultTime; // sets selected option dynamically
+    });
+
+
+
+async function runProcess(profileId, profileName, timeFilter) {
+
+    //request time
+await fetch(`/api/edit_time_filter/${timeFilter}`, {
+        method: 'GET',
+    });
+
+  const modal = document.getElementById('processModal');
+  modal.classList.add("show");
+
+  let terminal = document.getElementById("terminal");
+  terminal.innerHTML = ""; // clear old logs
+  let progressBar = document.getElementById("progressBar");
+
+  // Open SSE connection
+  const eventSource = new EventSource(`/api/load_profile/${profileId}/${profileName}/${timeFilter}`);
+
+  let step = 0;
+  const stepsCount = 7; // adjust to match backend steps
+
+  eventSource.onmessage = function(event) {
+    terminal.innerHTML += event.data + "<br>";
+    terminal.scrollTop = terminal.scrollHeight;
+
+    step++;
+    progressBar.style.width = (step / stepsCount * 100) + "%";
+  };
+
+  eventSource.onerror = function() {
+    eventSource.close();
+    setTimeout(() => {
+      modal.classList.remove("show");
+      window.location.href = "/";
+    }, 1000);
+  };
+}
+</script>
+
+
 </body>
 
 <!-- <script >

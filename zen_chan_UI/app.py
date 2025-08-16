@@ -17,13 +17,26 @@ def home():
             last_profile = json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
         # Handle empty file or missing file
-        last_profile = {"profile": None, "name": None,"last_updated": None}
+        last_profile = {"profile": None, "name": None,"last_updated": None,"current": None}
 
 
     if last_profile.get("profile"):
-        return render_template('index.html', profile_id=last_profile["profile"], profile_name=last_profile["name"])
+        return render_template('index.html', profile_id=last_profile["profile"], profile_name=last_profile["name"], time_filter=last_profile["current"])
     profiles = get_chrome_profiles()
     return render_template('choose_profile.html', profiles=profiles)
+
+@app.route('/api/edit_time_filter/<time_filter>')
+def edit_time_filter(time_filter):
+    try:
+        with open("last_profile.json", "r") as f:
+            last_profile = json.load(f)
+        last_profile["current"] = time_filter
+    except (json.JSONDecodeError, FileNotFoundError):
+        last_profile = {"profile": None, "name": None, "last_updated": None, "current": time_filter}
+    with open("last_profile.json", "w") as f:
+        json.dump(last_profile, f)
+    return jsonify(success=True)
+
 
 @app.route('/bubble')
 def bubble():
@@ -446,17 +459,17 @@ def choose_profile():
     profiles = get_chrome_profiles()
     return render_template("choose_profile.html", profiles=profiles)
 
-def load_profile_data_with_cleanup(profile, name,time="today"):
+def load_profile_data_with_cleanup(profile, name,time):
     try:
         # yield actual work
         yield from load_profile_data(profile, time)
     finally:
 
         with open("last_profile.json", "w") as f:
-            json.dump({"profile": profile, "name": name,"last_updated": datetime.now().isoformat()}, f)
+            json.dump({"profile": profile, "name": name,"last_updated": datetime.now().isoformat(),"current": time}, f)
 
-@app.route("/api/load_profile/<profile>/<name>")
-def load_profile(profile,name,time="today"):
+@app.route("/api/load_profile/<profile>/<name>/<time>")
+def load_profile(profile,name,time):
     try:
         return Response(
             stream_with_context(load_profile_data_with_cleanup(profile,name, time)),
@@ -464,8 +477,7 @@ def load_profile(profile,name,time="today"):
         )
     except Exception as e:
         return Response(f"Error loading profile: {e}", status=500)
-    
-    
+
 
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)

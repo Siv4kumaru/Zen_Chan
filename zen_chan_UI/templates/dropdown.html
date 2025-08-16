@@ -102,6 +102,32 @@
             height: 100%;
             display: block; /* Remove extra space below canvas if it's treated as inline */
         }
+
+            /* Terminal-style modal */
+    .modal-content {
+      background-color: #111;
+      border: 1px solid #6cff6c;
+      color: #aefcae;
+      font-family: "Courier New", monospace;
+      padding: 10px;
+    }
+    .terminal-output {
+      background: #000;
+      padding: 10px;
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #6cff6c;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    .progress {
+      height: 10px;
+      background-color: #222;
+      border: 1px solid #6cff6c;
+    }
+    .progress-bar {
+      background-color: #6cff6c;
+    }
     </style>
 </head>
 <body>
@@ -135,6 +161,18 @@
         </div>
     </div>
     </div>
+     <div class="modal fade" id="processModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <h5>> Running process...</h5>
+      <div class="terminal-output" id="terminal"></div>
+      <div class="progress">
+        <div class="progress-bar" id="progressBar" role="progressbar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
     <script>
 
     </script>

@@ -207,3 +207,61 @@ body::after {
     
 
 
+
+    .controls-panel {
+            flex-shrink: 0; /* Prevent it from shrinking */
+            width: 170px; /* Fixed width for the controls panel */
+            min-width: 100px; /* Minimum width to ensure readability on smaller screens */
+            max-width: 250px; /* Maximum width to prevent it from getting too wide */
+            padding: 15px; /* Internal padding */
+            border: 1px solid #33ff33; /* Match terminal theme */
+            background-color: #000; /* Match terminal theme */
+            display: flex; /* To stack select elements */
+            flex-direction: column; /* Stack select elements vertically */
+            gap: 10px; /* Space between dropdowns */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+
+        /* Adjust select styles for consistency within the new panel */
+        .controls-panel select {
+            background: black;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 10px; /* Slightly more padding */
+            width: 100%; /* Make selects fill the control panel width */
+            
+            box-sizing: border-box; /* Include padding and border in width */
+            margin: 0px ; /* Remove default margin that could interfere with gap */
+            font-family: 'Courier New', monospace; /* Inherit terminal font */
+            font-size: 1em;
+ 
+        }
+        .controls-panel{
+            margin-bottom: 50%;
+        }
+
+        .modal-content {
+      background-color: #111;
+      border: 1px solid #6cff6c;
+      color: #aefcae;
+      font-family: "Courier New", monospace;
+      padding: 10px;
+    }
+    .terminal-output {
+      background: #000;
+      padding: 10px;
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #6cff6c;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    .progress {
+      height: 10px;
+      background-color: #222;
+      border: 1px solid #6cff6c;
+    }
+    .progress-bar {
+      background-color: #6cff6c;
+    }
+       
