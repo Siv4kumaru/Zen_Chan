@@ -256,14 +256,18 @@ def daily_activity_data():
 def mood_weekly_avg():
     with sqlite3.connect(DB) as conn:
         query = """
-        SELECT 
-            strftime('%w', visit_datetime) AS weekday,   -- 0=Sunday, 6=Saturday
-            (SUM(visit_duration_sec) / 3600.0) / 
-            ( (julianday(MAX(visit_datetime)) - julianday(MIN(visit_datetime))) / 7.0 ) 
-            AS avg_hours
-        FROM visits
-        GROUP BY weekday
-        ORDER BY weekday;
+SELECT 
+    strftime('%w', visit_datetime) AS weekday,
+    (SUM(visit_duration_sec) / 3600) / 
+
+    (CASE 
+        WHEN (julianday(MAX(visit_datetime)/3600) - julianday(MIN(visit_datetime)/3600)) = 0
+        THEN 1.0  -- treat as 1 day
+        ELSE (julianday(MAX(visit_datetime)/3600) - julianday(MIN(visit_datetime)/3600)) / 7.0
+     END) AS avg_hours
+FROM visits
+GROUP BY weekday
+ORDER BY weekday;
 
         """
         rows = conn.execute(query).fetchall()
