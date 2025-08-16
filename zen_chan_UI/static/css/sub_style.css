@@ -31,6 +31,13 @@
             margin: 5px;
             padding: 5px;
         }
+        button#dimFilter {
+            background: black;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            margin: 5px;
+            padding: 5px;
+        }
         #graph {
             flex-grow: 1; /* Make the graph div take up all available vertical space */
         }

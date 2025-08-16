@@ -206,6 +206,25 @@ body::after {
 /* ... (rest of your existing CSS code below) ... */
     
 
+button#dimFilter {
+    width: 138 px;
+    height: 41px;
+    background: black;
+    color: #33ff33;
+    border: 1px solid #33ff33;
+    margin: 0px;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: underline; /* underline like a link */
+}
+
+button#dimFilter:hover {
+    background: #33ff33;
+    color: black;
+    border: 1px solid #33ff33;
+    text-decoration: underline;
+}
 
 
     .controls-panel {

@@ -16,5 +16,7 @@ COPY . .
 # Expose the port Flask will run on
 EXPOSE 5000
 
+WORKDIR /app/zen_chan_UI
+
 # Command to run the app
 CMD ["python", "app.py"]

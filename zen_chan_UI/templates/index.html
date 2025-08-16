@@ -112,7 +112,7 @@ _______________\:::\____/:::/__\:::\   \:::\____/:: /    |::|   /::\____\       
                 <div class="grid-container" style="margin:0;padding:0;width:100%;height:100%;border:none;display:block;">
                 <div class="terminal-panel">
                     <div class="panel-header">
-                        <span class="panel-header-title">Visit Radar Graph</span>
+                        <span class="panel-header-title">Control Panel</span>
                         <div class="panel-buttons"><span>_</span><span>□</span></div>
                      </div>
                      <div class="panel-content">
@@ -126,16 +126,18 @@ _______________\:::\____/:::/__\:::\   \:::\____/:: /    |::|   /::\____\       
                                 <option value="last_year">Last Year</option>
                                 <option value="all_time">All Time</option>
                             </select>
-                            <!-- 
-                            <select id="dimFilter">
-                                <option value="mood" selected>Mood</option>
-                                <option value="pre_labels">Activity</option>
-                            </select> -->
+                            
+                            <button id="dimFilter" href="/choose_profile" onclick="window.location.href='/choose_profile'">
+                              {{ profile_name }}
+                            </button>
+
                         </div>
 
+               
                         
 
                      </div>
+                     
                      </div>
                      </div>
                      </div>
@@ -247,40 +249,48 @@ _______________\:::\____/:::/__\:::\   \:::\____/:: /    |::|   /::\____\       
 
 async function runProcess(profileId, profileName, timeFilter) {
 
-    //request time
-await fetch(`/api/edit_time_filter/${timeFilter}`, {
+    // Request time
+    await fetch(`/api/edit_time_filter/${timeFilter}`, {
         method: 'GET',
     });
 
-  const modal = document.getElementById('processModal');
-  modal.classList.add("show");
+    // Create backdrop to block everything
+    const backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    document.body.appendChild(backdrop);
 
-  let terminal = document.getElementById("terminal");
-  terminal.innerHTML = ""; // clear old logs
-  let progressBar = document.getElementById("progressBar");
+    // Show modal
+    const modal = document.getElementById('processModal');
+    modal.classList.add("show");
 
-  // Open SSE connection
-  const eventSource = new EventSource(`/api/load_profile/${profileId}/${profileName}/${timeFilter}`);
+    let terminal = document.getElementById("terminal");
+    terminal.innerHTML = ""; // clear old logs
+    let progressBar = document.getElementById("progressBar");
 
-  let step = 0;
-  const stepsCount = 7; // adjust to match backend steps
+    // Open SSE connection
+    const eventSource = new EventSource(`/api/load_profile/${profileId}/${profileName}/${timeFilter}`);
 
-  eventSource.onmessage = function(event) {
-    terminal.innerHTML += event.data + "<br>";
-    terminal.scrollTop = terminal.scrollHeight;
+    let step = 0;
+    const stepsCount = 7; // adjust to match backend steps
 
-    step++;
-    progressBar.style.width = (step / stepsCount * 100) + "%";
-  };
+    eventSource.onmessage = function(event) {
+        terminal.innerHTML += event.data + "<br>";
+        terminal.scrollTop = terminal.scrollHeight;
 
-  eventSource.onerror = function() {
-    eventSource.close();
-    setTimeout(() => {
-      modal.classList.remove("show");
-      window.location.href = "/";
-    }, 1000);
-  };
+        step++;
+        progressBar.style.width = (step / stepsCount * 100) + "%";
+    };
+
+    eventSource.onerror = function() {
+        eventSource.close();
+        setTimeout(() => {
+            modal.classList.remove("show");
+            document.querySelector(".modal-backdrop")?.remove(); // remove overlay
+            window.location.href = "/";
+        }, 1000);
+    };
 }
+
 </script>
 
 
