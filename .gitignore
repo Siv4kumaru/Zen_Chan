@@ -1,3 +1,4 @@
 zen_chan_UI/chrome_history.db
 zen_chan_UI/data.db
 zen_chan_UI/__pycache__/
+zen_chan_UI/.venv/
