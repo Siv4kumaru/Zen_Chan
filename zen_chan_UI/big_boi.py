@@ -33,7 +33,7 @@ def datetime_to_webkit(dt: datetime.datetime) -> int:
     delta = dt - base
     return int(delta.total_seconds() * 1_000_000)
 
-def arrange_tat_data_boi(time_filter="all_time"):
+def arrange_tat_data_boi(time_filter="today"):
     conn = sqlite3.connect("chrome_history.db")
 
     # -------------------------------
@@ -222,17 +222,19 @@ def title_pre_labelling(embeddings_df):
 # Add the results to a new column
 
 
-def load_profile_data(profile,time="this_week"):
+def load_profile_data(profile,time="today"):
     # --- Data Load ---#
     """ handle multi chrome profiles and combo of it"""
     yield "data: > Initializing System ..........\n\n"
     copy_tat_data_boi(profile)
     yield "data: > Data Initialised .............\n\n"
 
-    visits_df,urls_df = arrange_tat_data_boi()
+    visits_df,urls_df = arrange_tat_data_boi(time)
 
     yield "data: > Data Preprocessing ...........\n\n"
     urls_df.loc[:,"title"]=urls_df["title"].apply(lambda x: text_preprocessing(x))
+    urls_df=urls_df.merge(visits_df, on="url_id", how="inner")[urls_df.columns].drop_duplicates()
+    
 
     yield "data: > Embedding the Data ...........\n\n"
     yield "data: > This may take a few mins .....\n\n"
@@ -269,6 +271,7 @@ def load_profile_data(profile,time="this_week"):
     # Apply it once
     final_df['mood'] = final_df.apply(heuristic_mood_label, axis=1)
     final_df.to_sql("visits", conn, if_exists="replace", index=False)
+    print(final_df.shape)
     conn.close()
     yield "data: > Processing complete ..........\n\n"
     yield "data: > Redirecting to dashboard .....\n\n"

@@ -8,11 +8,22 @@ from big_boi import load_profile_data
 
 
 app = Flask(__name__)
-DB = "..\\data.db"
+DB = "data.db"
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    try:
+        with open("last_profile.json", "r") as f:
+            last_profile = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        # Handle empty file or missing file
+        last_profile = {"profile": None, "name": None,"last_updated": None}
+
+
+    if last_profile.get("profile"):
+        return render_template('index.html', profile_id=last_profile["profile"], profile_name=last_profile["name"])
+    profiles = get_chrome_profiles()
+    return render_template('choose_profile.html', profiles=profiles)
 
 @app.route('/bubble')
 def bubble():
@@ -22,9 +33,9 @@ def bubble():
 def category():
     return render_template('category_master.html')
 
-@app.route('/dropdown')
-def dropdown():
-    return render_template('dropdown.html')
+@app.route('/dropdown/<profile_id>/<profile_name>')
+def dropdown(profile_id, profile_name):
+    return render_template('dropdown.html', profile_id=profile_id, profile_name=profile_name)
 
 @app.route('/embedding')
 def embedding():
@@ -344,11 +355,19 @@ def get_mood_color(mood):
     }
     return colors.get(mood.lower(), 'rgba(100, 100, 100, 0.6)') # Default grey
 
-@app.route("/api/change_time")
-def change_in_time(time):
-    '''time= Today, This Week, This Month, This Year, Last Year, All time'''
-    pass
 
+
+@app.route("/api/total_time_spent")
+def tot():
+    with sqlite3.connect(DB) as conn:
+        conn.row_factory = sqlite3.Row
+        query = """
+            SELECT sum(visit_duration_sec)/3600.00 as total_duration
+                FROM visits
+            """
+        rows = conn.execute(query).fetchall()
+    result = [dict(row) for row in rows]
+    return result
 
 # user profile chosing
 import os, json, re
@@ -434,18 +453,19 @@ def load_profile_data_with_cleanup(profile, name,time="today"):
     finally:
 
         with open("last_profile.json", "w") as f:
-            json.dump({"profile": profile, "name": name}, f)
+            json.dump({"profile": profile, "name": name,"last_updated": datetime.now().isoformat()}, f)
 
 @app.route("/api/load_profile/<profile>/<name>")
-def load_profile(profile,name):
+def load_profile(profile,name,time="today"):
     try:
         return Response(
-            stream_with_context(load_profile_data_with_cleanup(profile,name, time="today")),
+            stream_with_context(load_profile_data_with_cleanup(profile,name, time)),
             mimetype="text/event-stream"
         )
     except Exception as e:
         return Response(f"Error loading profile: {e}", status=500)
-
+    
+    
 
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)
