@@ -33,9 +33,9 @@ def bubble():
 def category():
     return render_template('category_master.html')
 
-@app.route('/dropdown/<profile_id>/<profile_name>')
-def dropdown(profile_id, profile_name):
-    return render_template('dropdown.html', profile_id=profile_id, profile_name=profile_name)
+@app.route('/dropdown')
+def dropdown():
+    return render_template('dropdown.html')
 
 @app.route('/embedding')
 def embedding():
