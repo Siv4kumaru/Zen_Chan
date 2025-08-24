@@ -9,6 +9,9 @@ import re
 from sentence_transformers import SentenceTransformer, util
 import emoji
 import umap
+from datetime import datetime, timedelta, timezone
+import pytz 
+
 
 def copy_tat_data_boi(profile):
     try:
@@ -29,6 +32,7 @@ import re
 
 def datetime_to_webkit(dt: datetime.datetime) -> int:
     """Convert Python datetime → WebKit microseconds since 1601-01-01"""
+    ist = pytz.timezone("Asia/Kolkata")
     base = datetime.datetime(1601, 1, 1)
     delta = dt - base
     return int(delta.total_seconds() * 1_000_000)
@@ -98,12 +102,22 @@ def arrange_tat_data_boi(time_filter="today"):
     # -------------------------------
     # Transform results
     # -------------------------------
+
+    
+    
+
+    ist = pytz.timezone("Asia/Kolkata")
+
     def webkit_to_datetime(webkit_ts):
         if webkit_ts is None:
             return None
-        return datetime.datetime(1601, 1, 1) + datetime.timedelta(microseconds=webkit_ts)
+        # Chrome/WebKit epoch is UTC
+        utc_time = datetime.datetime(1601, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=webkit_ts)
+        # Convert UTC → IST
+        return utc_time.astimezone(ist)
 
     visits_df["visit_datetime"] = visits_df["visit_time"].apply(webkit_to_datetime)
+    # visits_df.to_csv("dummy.csv", index=False)
     visits_df["visit_duration_sec"] = visits_df["visit_duration"] / 1_000_000
     visits_df["day_of_week"] = visits_df["visit_datetime"].dt.weekday
 
@@ -271,7 +285,6 @@ def load_profile_data(profile,time="today"):
     # Apply it once
     final_df['mood'] = final_df.apply(heuristic_mood_label, axis=1)
     final_df.to_sql("visits", conn, if_exists="replace", index=False)
-    print(final_df.shape)
     conn.close()
     yield "data: > Processing complete ..........\n\n"
     yield "data: > Redirecting to dashboard .....\n\n"
