@@ -254,7 +254,8 @@ def load_profile_data(profile,time="today"):
     yield "data: > This may take a few mins .....\n\n"
     # ---- embeddor ---# 
     global embeddor_model
-    embeddor_model = SentenceTransformer("../all-MiniLM-L6-v2_local", device='cpu')
+    # embeddor_model = SentenceTransformer("../all-MiniLM-L6-v2_local", device='cpu')
+    embeddor_model = SentenceTransformer("all-MiniLM-L6-v2", device='cpu')
     embeddings = get_embeddings(embeddor_model,urls_df)
     embeddings_df = pd.DataFrame(embeddings, columns=[f"embedding_{i}" for i in range(embeddings.shape[1])])
 
